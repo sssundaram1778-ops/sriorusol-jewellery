@@ -55,7 +55,7 @@ export const generatePledgePDF = (pledge, language = 'en') => {
   // Tagline
   doc.setFontSize(8)
   doc.setFont(undefined, 'normal')
-  doc.text('Trusted Jewellery Finance Services', pageWidth / 2, 19, { align: 'center' })
+  doc.text('Trusted Jeweller Finance Services', pageWidth / 2, 19, { align: 'center' })
   
   // Receipt badge
   doc.setFillColor(...COLORS.primary)

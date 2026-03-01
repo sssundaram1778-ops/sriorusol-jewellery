@@ -30,7 +30,7 @@ export default function Sidebar() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight">Sri Orusol</h1>
-            <p className="text-xs text-slate-400 font-medium">Jewellery Management</p>
+            <p className="text-xs text-slate-400 font-medium">Jeweller Management</p>
           </div>
         </div>
       </div>

@@ -46,7 +46,7 @@ export default function Home() {
             </div>
             <div>
               <h1 className="text-lg font-bold text-slate-800 tracking-tight">Sri Orusol</h1>
-              <p className="text-[11px] text-slate-500 font-medium">Jewellery Pledges</p>
+              <p className="text-[11px] text-slate-500 font-medium">Jeweller Pledges</p>
             </div>
           </div>
           <button 
