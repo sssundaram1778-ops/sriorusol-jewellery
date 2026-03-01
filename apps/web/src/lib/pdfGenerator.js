@@ -4,12 +4,13 @@ import { format } from 'date-fns'
 import { calculatePledgeTotals } from './database'
 
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 2
-  }).format(amount || 0)
-}
+    const num = parseFloat(amount) || 0
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 2
+    }).format(num)
+  }
 
 const formatDate = (date) => {
   if (!date) return '-'

@@ -71,8 +71,10 @@ export const getDefaultInterestRate = (jewelType) => {
 
 // Calculate interest for a single amount entry
 export const calculateInterest = (amount, interestRate, startDate, endDate = new Date()) => {
+  const amountNum = parseFloat(amount) || 0
+  const rateNum = parseFloat(interestRate) || 2
   const { days, months } = calculateInterestMonths(startDate, endDate)
-  const interest = amount * (interestRate / 100) * months
+  const interest = amountNum * (rateNum / 100) * months
   return { 
     days, 
     months,
@@ -91,20 +93,26 @@ export const calculatePledgeTotals = (amounts, endDate = new Date()) => {
   const breakdown = []
 
   amounts.forEach(amt => {
+    // Ensure amount and interest_rate are numbers
+    const amountNum = parseFloat(amt.amount) || 0
+    const interestRateNum = parseFloat(amt.interest_rate) || 2
+    
     const { days, months, interest } = calculateInterest(
-      amt.amount, 
-      amt.interest_rate, 
+      amountNum, 
+      interestRateNum, 
       amt.date, 
       endDate
     )
-    totalPrincipal += amt.amount
+    totalPrincipal += amountNum
     totalInterest += interest
     breakdown.push({
       ...amt,
+      amount: amountNum,
+      interest_rate: interestRateNum,
       days,
       months,
       interest,
-      total: amt.amount + interest
+      total: amountNum + interest
     })
   })
 
