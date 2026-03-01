@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 import { format } from 'date-fns'
 import { calculatePledgeTotals } from './database'
 
@@ -185,7 +185,7 @@ export const generatePledgePDF = (pledge, language = 'en') => {
       formatCurrency(amt.total)
     ])
     
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: amountHeaders,
       body: amountRows,
@@ -282,7 +282,7 @@ export const generatePledgePDF = (pledge, language = 'en') => {
       r.status
     ])
     
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: repledgeHeaders,
       body: repledgeRows,
@@ -432,7 +432,7 @@ export const downloadFinancerPDF = (financerName, financerPlace, pledges) => {
     p.status || '-'
   ])
   
-  doc.autoTable({
+  autoTable(doc, {
     startY: yPos,
     head: headers,
     body: rows,
@@ -577,7 +577,7 @@ export const downloadAllPledgesPDF = (pledges, reportTitle = 'All Pledges') => {
     p.financer_name || '-'
   ])
   
-  doc.autoTable({
+  autoTable(doc, {
     startY: yPos,
     head: headers,
     body: rows,
