@@ -635,7 +635,7 @@ export default function PledgeDetails() {
               </button>
               <button 
                 onClick={() => setShowJustCloseModal(true)}
-                className="flex-1 h-11 rounded-xl bg-red-500 hover:bg-red-600 text-white flex items-center justify-center gap-2 text-sm font-bold transition-all"
+                className="flex-1 h-11 rounded-xl bg-slate-500 hover:bg-slate-600 text-white flex items-center justify-center gap-2 text-sm font-bold transition-all"
               >
                 <XCircle className="w-4 h-4" />
                 Close
@@ -645,7 +645,7 @@ export default function PledgeDetails() {
         )}
       </div>
 
-      {/* Close Pledge Modal */}
+      {/* Return Pledge Modal - Creates New Pledge */}
       {showCloseModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-5 max-w-md w-full border border-gray-200">
