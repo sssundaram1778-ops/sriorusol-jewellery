@@ -8,23 +8,23 @@ export default function BottomNav() {
   const location = useLocation()
   const [showMenu, setShowMenu] = useState(false)
 
-  // Main navigation items (always visible in bottom bar)
+  // Main navigation items (always visible in bottom bar) - 4 items + More
   const mainNavItems = [
-    { to: '/', icon: Home, label: t('nav.home') },
-    { to: '/active', icon: CheckCircle, label: t('nav.active') },
+    { to: '/', icon: Home, label: 'Home' },
+    { to: '/active', icon: CheckCircle, label: 'Active' },
     { to: '/new', icon: Plus, label: 'New', isCenter: true },
     { to: '/pledge', icon: Search, label: 'Search' },
   ]
 
-  // More menu items
+  // More menu items - All remaining features
   const moreMenuItems = [
-    { to: '/history', icon: History, label: t('nav.history') },
+    { to: '/history', icon: History, label: 'History' },
     { to: '/all', icon: List, label: 'All Pledges' },
-    { to: '/financers', icon: Landmark, label: t('nav.financers') },
-    { to: '/settings', icon: Settings, label: t('nav.settings') }
+    { to: '/financers', icon: Landmark, label: 'Financers' },
+    { to: '/settings', icon: Settings, label: 'Settings' }
   ]
 
-  // Check if current path is in more menu
+  // Check if current path is in more menu (for highlighting More button)
   const isMoreActive = moreMenuItems.some(item => location.pathname === item.to)
 
   return (
@@ -50,7 +50,7 @@ export default function BottomNav() {
               </button>
             </div>
             
-            {/* Menu Items */}
+            {/* Menu Items - Grid 2x2 */}
             <div className="p-3 grid grid-cols-2 gap-2">
               {moreMenuItems.map(({ to, icon: Icon, label }) => {
                 const isActive = location.pathname === to
@@ -59,10 +59,10 @@ export default function BottomNav() {
                     key={to}
                     to={to}
                     onClick={() => setShowMenu(false)}
-                    className={`flex items-center gap-3 p-4 rounded-xl transition-all ${
+                    className={`flex items-center gap-3 p-4 rounded-xl transition-all active:scale-95 ${
                       isActive 
                         ? 'bg-blue-600 text-white shadow-md' 
-                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                     }`}
                   >
                     <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-500'}`} />

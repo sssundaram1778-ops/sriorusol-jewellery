@@ -12,15 +12,16 @@ import {
   List
 } from 'lucide-react'
 
+// All navigation items - same order and features as mobile
 const navItems = [
-  { path: '/', icon: Home, labelKey: 'nav.home' },
-  { path: '/new', icon: PlusCircle, labelKey: 'nav.newPledge' },
-  { path: '/active', icon: CheckCircle, labelKey: 'nav.active' },
-  { path: '/pledge', icon: Search, labelKey: 'nav.pledge' },
-  { path: '/history', icon: History, labelKey: 'nav.history' },
-  { path: '/all', icon: List, labelKey: 'All Pledges', isStatic: true },
-  { path: '/financers', icon: Landmark, labelKey: 'nav.financers' },
-  { path: '/settings', icon: Settings, labelKey: 'nav.settings' },
+  { path: '/', icon: Home, label: 'Home' },
+  { path: '/new', icon: PlusCircle, label: 'New Pledge' },
+  { path: '/active', icon: CheckCircle, label: 'Active' },
+  { path: '/pledge', icon: Search, label: 'Search' },
+  { path: '/history', icon: History, label: 'History' },
+  { path: '/all', icon: List, label: 'All Pledges' },
+  { path: '/financers', icon: Landmark, label: 'Financers' },
+  { path: '/settings', icon: Settings, label: 'Settings' },
 ]
 
 export default function Sidebar() {
@@ -37,14 +38,14 @@ export default function Sidebar() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900 tracking-tight">Sri Orusol</h1>
-            <p className="text-xs text-gray-500 font-medium">{t('app.tagline')}</p>
+            <p className="text-xs text-gray-500 font-medium">Jewellery Pledges</p>
           </div>
         </div>
       </div>
 
-      {/* Navigation Links */}
+      {/* Navigation Links - All 8 features */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {navItems.map(({ path, icon: Icon, labelKey, isStatic }) => {
+        {navItems.map(({ path, icon: Icon, label }) => {
           const isActive = location.pathname === path
           return (
             <NavLink
@@ -59,7 +60,7 @@ export default function Sidebar() {
               `}
             >
               <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500'}`} />
-              <span className="font-medium text-sm">{isStatic ? labelKey : t(labelKey)}</span>
+              <span className="font-medium text-sm">{label}</span>
             </NavLink>
           )
         })}
@@ -68,7 +69,7 @@ export default function Sidebar() {
       {/* Bottom Section */}
       <div className="p-4 border-t border-gray-100">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4">
-          <p className="text-[10px] text-gray-500 mb-1 uppercase tracking-wider font-semibold">{t('app.version')}</p>
+          <p className="text-[10px] text-gray-500 mb-1 uppercase tracking-wider font-semibold">Version</p>
           <p className="text-sm font-bold text-blue-700">v1.0.0</p>
         </div>
       </div>
