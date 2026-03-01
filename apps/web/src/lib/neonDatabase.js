@@ -47,17 +47,55 @@ export const JEWEL_TYPES = {
   MIXED: { rate: null, label: 'Mixed', labelTa: 'கலப்பு' }
 }
 
-// Calculate interest months with 0.5 month increments and 1 month minimum
+// Calculate interest months based on calendar months
+// Rule: 1-15 days in a month = 0.5 month, 16+ days = 1 month
+// Minimum: 1 month interest
 export const calculateInterestMonths = (startDate, endDate = new Date()) => {
   const start = new Date(startDate)
   const end = new Date(endDate)
   
-  const days = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)))
-  const rawMonths = days / 30
-  const roundedMonths = Math.ceil(rawMonths * 2) / 2
-  const months = Math.max(1, roundedMonths)
+  // Normalize dates to start of day
+  start.setHours(0, 0, 0, 0)
+  end.setHours(0, 0, 0, 0)
   
-  return { days, months, rawMonths }
+  // Calculate total days for display
+  const totalDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)))
+  
+  let totalMonths = 0
+  let current = new Date(start)
+  
+  while (current <= end) {
+    const currentYear = current.getFullYear()
+    const currentMonth = current.getMonth()
+    
+    // Get the last day of current month
+    const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
+    
+    // Determine start day in this month
+    const startDayInMonth = current.getDate()
+    
+    // Determine end day in this month (either end of month or endDate)
+    const endOfThisMonth = new Date(currentYear, currentMonth + 1, 0)
+    const endDayInMonth = end < endOfThisMonth ? end.getDate() : lastDayOfMonth
+    
+    // Calculate days used in this month
+    const daysInThisMonth = endDayInMonth - startDayInMonth + 1
+    
+    // Apply rule: ≤15 days = 0.5 month, >15 days = 1 month
+    if (daysInThisMonth <= 15) {
+      totalMonths += 0.5
+    } else {
+      totalMonths += 1
+    }
+    
+    // Move to 1st of next month
+    current = new Date(currentYear, currentMonth + 1, 1)
+  }
+  
+  // Apply minimum 1 month rule
+  const months = Math.max(1, totalMonths)
+  
+  return { days: totalDays, months, rawMonths: totalMonths }
 }
 
 // Get default interest rate based on jewel type
