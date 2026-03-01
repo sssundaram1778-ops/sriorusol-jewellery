@@ -23,6 +23,7 @@ export default function PledgeDetails() {
   const navigate = useNavigate()
   
   const [showCloseModal, setShowCloseModal] = useState(false)
+  const [showJustCloseModal, setShowJustCloseModal] = useState(false)
   const [showAddAmountModal, setShowAddAmountModal] = useState(false)
   const [showReturnModal, setShowReturnModal] = useState(false)
   const [showAdditionalReturnModal, setShowAdditionalReturnModal] = useState(false)
@@ -102,6 +103,18 @@ export default function PledgeDetails() {
       toast.error(error.message || 'Failed to return pledge')
     } finally {
       setIsReturning(false)
+    }
+  }
+
+  // Just close pledge without creating new one
+  const handleJustClose = async () => {
+    try {
+      await closePledge(id, canceledDate, null)
+      toast.success('Pledge closed successfully')
+      setShowJustCloseModal(false)
+      navigate('/past')
+    } catch (error) {
+      toast.error(error.message || 'Failed to close pledge')
     }
   }
 
@@ -614,18 +627,18 @@ export default function PledgeDetails() {
                 Edit
               </button>
               <button 
-                onClick={() => setShowAddAmountModal(true)}
+                onClick={() => setShowCloseModal(true)}
                 className="flex-1 h-11 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-2 text-sm font-bold transition-all"
               >
-                <Plus className="w-4 h-4" />
-                Add Amount
+                <RefreshCw className="w-4 h-4" />
+                Return
               </button>
               <button 
-                onClick={() => setShowCloseModal(true)}
-                className="flex-1 h-11 rounded-xl bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center gap-2 text-sm font-bold transition-all"
+                onClick={() => setShowJustCloseModal(true)}
+                className="flex-1 h-11 rounded-xl bg-red-500 hover:bg-red-600 text-white flex items-center justify-center gap-2 text-sm font-bold transition-all"
               >
                 <XCircle className="w-4 h-4" />
-                Return
+                Close
               </button>
             </div>
           </div>
@@ -701,6 +714,42 @@ export default function PledgeDetails() {
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 ) : null}
                 Return & Create New
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Just Close Modal (without creating new pledge) */}
+      {showJustCloseModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-5 max-w-sm w-full border border-gray-200">
+            <h3 className="text-lg font-bold mb-2 text-gray-900">Close Pledge</h3>
+            <p className="text-gray-600 text-sm mb-4">This will permanently close this pledge without creating a new one.</p>
+            
+            {/* Close Date */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Close Date *</label>
+              <input
+                type="date"
+                value={canceledDate}
+                onChange={(e) => setCanceledDate(e.target.value)}
+                className="w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setShowJustCloseModal(false)}
+                className="flex-1 h-10 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleJustClose}
+                className="flex-1 h-10 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium text-sm transition-colors"
+              >
+                Close Pledge
               </button>
             </div>
           </div>
