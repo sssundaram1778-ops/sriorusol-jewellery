@@ -175,14 +175,14 @@ export const usePledgeStore = create((set, get) => ({
   },
 
   // Close pledge
-  closePledge: async (id, canceledDate) => {
+  closePledge: async (id, canceledDate, returnPledgeNo) => {
     set({ isLoading: true, error: null })
     try {
-      const closedPledge = await api.closePledge(id, canceledDate)
+      const closedPledge = await api.closePledge(id, canceledDate, returnPledgeNo)
       set((state) => ({
         activePledges: state.activePledges.filter(p => p.id !== id),
         closedPledges: [closedPledge, ...state.closedPledges],
-        currentPledge: state.currentPledge?.id === id ? { ...state.currentPledge, status: 'CLOSED' } : state.currentPledge,
+        currentPledge: state.currentPledge?.id === id ? { ...state.currentPledge, status: 'CLOSED', return_pledge_no: returnPledgeNo } : state.currentPledge,
         isLoading: false
       }))
       return closedPledge

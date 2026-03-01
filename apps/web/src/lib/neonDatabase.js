@@ -570,10 +570,11 @@ export const updatePledge = async (id, updates) => {
 }
 
 // Close pledge
-export const closePledge = async (id, closedDate) => {
+export const closePledge = async (id, closedDate, returnPledgeNo) => {
   return updatePledge(id, {
     status: 'CLOSED',
-    canceled_date: closedDate || format(new Date(), 'yyyy-MM-dd')
+    canceled_date: closedDate || format(new Date(), 'yyyy-MM-dd'),
+    return_pledge_no: returnPledgeNo || null
   })
 }
 

@@ -32,6 +32,7 @@ export default function PledgeDetails() {
   const [showAmountHistory, setShowAmountHistory] = useState(true)
   const [showOwnerRepledgeHistory, setShowOwnerRepledgeHistory] = useState(true)
   const [canceledDate, setCanceledDate] = useState(new Date().toISOString().split('T')[0])
+  const [returnPledgeNo, setReturnPledgeNo] = useState('')
 
   const { 
     currentPledge, 
@@ -60,9 +61,10 @@ export default function PledgeDetails() {
 
   const handleClosePledge = async () => {
     try {
-      await closePledge(id, canceledDate)
+      await closePledge(id, canceledDate, returnPledgeNo)
       toast.success(t('messages.pledgeClosed'))
       setShowCloseModal(false)
+      setReturnPledgeNo('')
       navigate('/past')
     } catch (error) {
       toast.error(error.message || t('common.error'))
@@ -600,11 +602,24 @@ export default function PledgeDetails() {
       {showCloseModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-5 max-w-sm w-full border border-gray-200">
-            <h3 className="text-base font-bold mb-3 text-gray-900">{t('pledge.close')}</h3>
-            <p className="text-gray-600 text-sm mb-4">{t('messages.confirmClose')}</p>
+            <h3 className="text-base font-bold mb-3 text-gray-900">Return Pledge</h3>
+            <p className="text-gray-600 text-sm mb-4">Enter return details to mark this pledge as returned.</p>
             
+            {/* Return Pledge Number */}
             <div className="mb-4">
-              <label className="text-sm font-medium text-gray-700 mb-1 block">{t('pledge.closedDate')}</label>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Return Pledge No *</label>
+              <input
+                type="text"
+                value={returnPledgeNo}
+                onChange={(e) => setReturnPledgeNo(e.target.value)}
+                placeholder="Enter pledge number"
+                className="w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"
+              />
+            </div>
+
+            {/* Return Date */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Return Date *</label>
               <input
                 type="date"
                 value={canceledDate}
@@ -615,16 +630,20 @@ export default function PledgeDetails() {
 
             <div className="flex gap-2">
               <button 
-                onClick={() => setShowCloseModal(false)}
+                onClick={() => {
+                  setShowCloseModal(false)
+                  setReturnPledgeNo('')
+                }}
                 className="flex-1 h-10 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium text-sm transition-colors"
               >
                 {t('pledge.cancel')}
               </button>
               <button 
                 onClick={handleClosePledge}
-                className="flex-1 h-10 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium text-sm transition-colors"
+                disabled={!returnPledgeNo.trim()}
+                className="flex-1 h-10 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {t('common.confirm')}
+                Confirm Return
               </button>
             </div>
           </div>
