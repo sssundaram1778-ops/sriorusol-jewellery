@@ -36,10 +36,10 @@ export default function ConnectionStatus({ showWhenConnected = false }) {
           <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-medium text-amber-800">
-              Supabase not configured
+              Database not configured
             </p>
             <p className="text-xs text-amber-600">
-              Data is stored locally. Configure Supabase for cloud sync.
+              Data is stored locally. Configure database for cloud sync.
             </p>
           </div>
         </div>

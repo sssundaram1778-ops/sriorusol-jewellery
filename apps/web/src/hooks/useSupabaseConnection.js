@@ -3,8 +3,8 @@ import {
   getConnectionStatus, 
   subscribeToConnectionStatus, 
   checkConnection,
-  isSupabaseConfigured 
-} from '../lib/supabaseClient'
+  isNeonConfigured 
+} from '../lib/neonClient'
 
 export const useSupabaseConnection = () => {
   const [status, setStatus] = useState(getConnectionStatus())
@@ -19,8 +19,8 @@ export const useSupabaseConnection = () => {
   }, [])
 
   const retry = useCallback(async () => {
-    if (!isSupabaseConfigured) {
-      setLastError('Supabase not configured')
+    if (!isNeonConfigured) {
+      setLastError('Database not configured')
       return false
     }
 
@@ -46,7 +46,7 @@ export const useSupabaseConnection = () => {
     isConnected: status === 'connected',
     isConnecting: status === 'connecting' || isChecking,
     isDisconnected: status === 'disconnected',
-    isConfigured: isSupabaseConfigured,
+    isConfigured: isNeonConfigured,
     lastError,
     retry
   }
