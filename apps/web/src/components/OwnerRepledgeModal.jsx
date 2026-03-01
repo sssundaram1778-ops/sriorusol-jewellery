@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { X, Landmark, FileText, Search } from 'lucide-react'
-import { getFinancerList } from '../lib/supabase'
+import { getFinancerList } from '../lib/database'
 
 const ownerRepledgeSchema = z.object({
   financer_name: z.string().min(1, 'Financer name is required'),

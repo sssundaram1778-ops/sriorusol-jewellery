@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { usePledgeStore } from '../store/pledgeStore'
 import PledgeCard from '../components/PledgeCard'
 import { Search, X, CheckCircle, Download } from 'lucide-react'
-import { getActivePledgesWithAmounts } from '../lib/supabase'
+import { getActivePledgesWithAmounts } from '../lib/database'
 import { downloadAllPledgesPDF } from '../lib/pdfGenerator'
 import toast from 'react-hot-toast'
 

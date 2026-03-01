@@ -6,7 +6,7 @@ import {
   isNeonConfigured 
 } from '../lib/neonClient'
 
-export const useSupabaseConnection = () => {
+export const useNeonConnection = () => {
   const [status, setStatus] = useState(getConnectionStatus())
   const [isChecking, setIsChecking] = useState(false)
   const [lastError, setLastError] = useState(null)
@@ -52,4 +52,4 @@ export const useSupabaseConnection = () => {
   }
 }
 
-export default useSupabaseConnection
+export default useNeonConnection

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import * as api from '../lib/supabase'
+import * as api from '../lib/database'
 
 export const usePledgeStore = create((set, get) => ({
   // State

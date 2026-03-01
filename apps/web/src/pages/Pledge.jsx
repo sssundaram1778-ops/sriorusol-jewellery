@@ -4,7 +4,7 @@ import { usePledgeStore } from '../store/pledgeStore'
 import PledgeCard from '../components/PledgeCard'
 import { Search as SearchIcon, X, FileText, CheckCircle, XCircle, List, Download } from 'lucide-react'
 import { downloadAllPledgesPDF } from '../lib/pdfGenerator'
-import { getAllPledgesWithAmounts, getActivePledgesWithAmounts, getClosedPledgesWithAmounts } from '../lib/supabase'
+import { getAllPledgesWithAmounts, getActivePledgesWithAmounts, getClosedPledgesWithAmounts } from '../lib/database'
 import toast from 'react-hot-toast'
 
 export default function Pledge() {

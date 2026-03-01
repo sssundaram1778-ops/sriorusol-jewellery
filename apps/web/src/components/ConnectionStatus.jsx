@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { WifiOff, Wifi, RefreshCw, AlertTriangle } from 'lucide-react'
-import useSupabaseConnection from '../hooks/useSupabaseConnection'
+import useNeonConnection from '../hooks/useNeonConnection'
 
 export default function ConnectionStatus({ showWhenConnected = false }) {
-  const { status, isConnected, isConnecting, isDisconnected, isConfigured, lastError, retry } = useSupabaseConnection()
+  const { status, isConnected, isConnecting, isDisconnected, isConfigured, lastError, retry } = useNeonConnection()
   const [isRetrying, setIsRetrying] = useState(false)
   const [showBanner, setShowBanner] = useState(false)
 

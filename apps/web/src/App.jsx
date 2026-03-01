@@ -9,13 +9,13 @@ import PledgeDetails from './pages/PledgeDetails'
 import Settings from './pages/Settings'
 import Financers from './pages/Financers'
 import ConnectionStatus from './components/ConnectionStatus'
-import { keepAlive } from './lib/supabase'
+import { keepAlive } from './lib/database'
 
-// Keep-alive interval (every 4 minutes to prevent Supabase free tier pause)
+// Keep-alive interval (every 4 minutes to prevent database pause)
 const KEEP_ALIVE_INTERVAL = 4 * 60 * 1000
 
 function App() {
-  // Set up keep-alive ping to prevent Supabase free tier from pausing
+  // Set up keep-alive ping to prevent database from pausing
   useEffect(() => {
     // Initial ping
     keepAlive()

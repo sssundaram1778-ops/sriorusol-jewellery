@@ -9,8 +9,8 @@ import {
 // Re-export for backward compatibility
 export { sql, isNeonConfigured, checkConnection, keepAlive }
 // Alias for compatibility with existing code
-export const supabase = sql
-export const isSupabaseConfigured = isNeonConfigured
+// Legacy alias removed
+// Legacy alias removed
 
 // ============================================
 // MOCK DATA STORAGE (localStorage fallback)

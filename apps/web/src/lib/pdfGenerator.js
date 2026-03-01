@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import { format } from 'date-fns'
-import { calculatePledgeTotals } from './supabase'
+import { calculatePledgeTotals } from './database'
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-IN', {

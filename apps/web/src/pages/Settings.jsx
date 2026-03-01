@@ -72,7 +72,7 @@ export default function Settings() {
               <Clock className="w-4 h-4" />
               <span className="text-sm font-medium">Auto-sync enabled</span>
             </div>
-            <span className="text-xs text-slate-400 font-medium">Powered by Supabase</span>
+            <span className="text-xs text-slate-400 font-medium">Powered by Neon</span>
           </div>
         </div>
 
