@@ -1,0 +1,35 @@
+# Supabase Keep-Alive Workflow
+# Pings your Supabase database every 5 days to prevent free tier pausing
+# This is FREE - GitHub Actions has 2000 minutes/month free
+
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Runs at 9:00 AM UTC on Monday and Thursday (twice per week)
+    - cron: '0 9 * * 1,4'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Database
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          # Simple curl request to Supabase REST API
+          # This counts as "activity" and prevents pausing
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/pledges?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_KEY}")
+          
+          if [ "$response" = "200" ] || [ "$response" = "401" ]; then
+            echo "✅ Supabase pinged successfully (HTTP $response)"
+          else
+            echo "⚠️ Ping returned HTTP $response"
+          fi
+          
+          echo "🕐 Next ping scheduled in 3-4 days"

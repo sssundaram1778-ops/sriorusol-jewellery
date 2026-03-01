@@ -1,135 +1,141 @@
-# Turborepo starter
+# Sri Orusol Jewellery - Monorepo
 
-This Turborepo starter is maintained by the Turborepo core team.
+A Progressive Web App (PWA) for managing jewellery rental pledges. Built with Turborepo, React, Vite, and TailwindCSS.
 
-## Using this example
+## Features
 
-Run the following command:
+- 📱 **Mobile-First Design** - Optimized for both mobile and desktop
+- 🔄 **PWA Support** - Install as native app, offline support
+- 🌐 **Multi-language** - i18n support (English, Tamil)
+- 💾 **Offline-First** - Works without internet connection
+- 🎨 **Modern UI** - DaisyUI + TailwindCSS
+- ⚡ **Fast** - Vite for development and production builds
 
-```sh
-npx create-turbo@latest
+## Apps and Packages
+
+- `apps/web` - Main web application (React + Vite PWA)
+- `apps/docs` - Documentation (Next.js)
+- `packages/ui` - Shared React component library
+- `packages/shared` - Shared utilities
+- `packages/eslint-config` - ESLint configurations
+- `packages/typescript-config` - TypeScript configurations
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js >= 18
+- npm >= 10
+
+### Installation
+
+```bash
+npm install
 ```
 
-## What's inside?
+### Development
 
-This Turborepo includes the following packages/apps:
+```bash
+# Run all apps
+npm run dev
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+# Run only web app
+npm run dev:web
+```
 
 ### Build
 
-To build all apps and packages, run the following command:
+```bash
+# Build all apps
+npm run build
 
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+# Build only web app
+npm run build:web
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+### Preview Production Build
 
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+```bash
+npm run preview
 ```
 
-### Develop
+## PWA Features
 
-To develop all apps and packages, run the following command:
+The web app is a fully-featured Progressive Web App:
 
-```
-cd my-turborepo
+### Install on Mobile/Desktop
+- **Android**: Chrome menu → "Add to Home Screen"
+- **iOS**: Safari Share → "Add to Home Screen"
+- **Desktop**: Install prompt appears or use browser menu
 
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
+### Offline Support
+- App works offline after first load
+- Data is cached locally
+- Background sync when online
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
+### Service Worker
+- Auto-updates when new version is available
+- Caches fonts, assets, and app shell
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+## Project Structure
 
 ```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+Sriorusol-monorepo/
+├── apps/
+│   ├── web/                 # Main PWA application
+│   │   ├── public/          # Static assets
+│   │   │   ├── icons/       # PWA icons
+│   │   │   └── manifest.json
+│   │   ├── src/
+│   │   │   ├── components/  # React components
+│   │   │   ├── hooks/       # Custom hooks (usePWA, useResponsive)
+│   │   │   ├── pages/       # Page components
+│   │   │   ├── store/       # State management
+│   │   │   └── locales/     # i18n translations
+│   │   └── vite.config.js   # Vite + PWA config
+│   └── docs/
+├── packages/
+│   ├── ui/
+│   ├── shared/
+│   ├── eslint-config/
+│   └── typescript-config/
+├── scripts/
+│   └── generate-icons.js    # PWA icon generator
+├── turbo.json
+└── package.json
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+## Scripts
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run dev:web` | Start only web app |
+| `npm run build` | Build all packages |
+| `npm run build:web` | Build only web app |
+| `npm run preview` | Preview production build |
+| `npm run lint` | Run ESLint |
+| `npm run format` | Format code with Prettier |
+| `npm run generate-icons` | Generate PWA icons |
 
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
+## Technology Stack
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
+- **Framework**: React 18
+- **Build Tool**: Vite 7
+- **Styling**: TailwindCSS 4 + DaisyUI 5
+- **Routing**: React Router 7
+- **State**: Zustand
+- **i18n**: i18next
+- **PWA**: vite-plugin-pwa (Workbox)
+- **Monorepo**: Turborepo
 
-## Useful Links
+## Responsive Design
 
-Learn more about the power of Turborepo:
+The app is designed mobile-first with breakpoints:
+- **Mobile**: < 640px (Bottom navigation)
+- **Tablet**: 640px - 1024px
+- **Desktop**: > 1024px (Sidebar navigation)
 
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+## License
+
+Private - All rights reserved

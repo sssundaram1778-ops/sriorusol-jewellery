@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="72" height="72" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="72" height="72" fill="#2563EB" rx="10.799999999999999"/>
+  
+  <!-- Gem/Diamond Shape -->
+  <g transform="translate(36, 36)">
+    <!-- Top facet -->
+    <polygon 
+      points="0,-25.2 15.119999999999997,-10.08 -15.119999999999997,-10.08" 
+      fill="#60A5FA"
+    />
+    <!-- Left facet -->
+    <polygon 
+      points="-21.599999999999998,-5.04 -15.119999999999997,-10.08 0,25.2" 
+      fill="#3B82F6"
+    />
+    <!-- Right facet -->
+    <polygon 
+      points="21.599999999999998,-5.04 15.119999999999997,-10.08 0,25.2" 
+      fill="#1D4ED8"
+    />
+    <!-- Center facet -->
+    <polygon 
+      points="-15.119999999999997,-10.08 15.119999999999997,-10.08 0,25.2" 
+      fill="#93C5FD"
+    />
+    <!-- Top left edge -->
+    <polygon 
+      points="0,-25.2 -21.599999999999998,-5.04 -15.119999999999997,-10.08" 
+      fill="#BFDBFE"
+    />
+    <!-- Top right edge -->
+    <polygon 
+      points="0,-25.2 21.599999999999998,-5.04 15.119999999999997,-10.08" 
+      fill="#DBEAFE"
+    />
+  </g>
+  
+  <!-- Shine effect -->
+  <ellipse cx="28.8" cy="25.200000000000003" rx="5.76" ry="2.88" fill="white" opacity="0.4"/>
+</svg>
