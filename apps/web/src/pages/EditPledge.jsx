@@ -41,8 +41,8 @@ export default function EditPledge() {
     defaultValues: {
       date: '',
       no_of_items: 1,
-      gross_weight: 0,
-      net_weight: 0,
+      gross_weight: '',
+      net_weight: '',
       jewel_type: 'GOLD',
       interest_rate: 2
     }
@@ -64,8 +64,8 @@ export default function EditPledge() {
         phone_number: currentPledge.phone_number || '',
         jewels_details: currentPledge.jewels_details || '',
         no_of_items: currentPledge.no_of_items || 1,
-        gross_weight: currentPledge.gross_weight || 0,
-        net_weight: currentPledge.net_weight || 0,
+        gross_weight: currentPledge.gross_weight || '',
+        net_weight: currentPledge.net_weight || '',
         jewel_type: jewelType,
         interest_rate: currentPledge.interest_rate || 2
       })

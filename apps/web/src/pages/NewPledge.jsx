@@ -43,9 +43,9 @@ export default function NewPledge() {
       pledge_no: '',
       date: new Date().toISOString().split('T')[0],
       no_of_items: 1,
-      initialAmount: 0,
-      gross_weight: 0,
-      net_weight: 0,
+      initialAmount: '',
+      gross_weight: '',
+      net_weight: '',
       jewel_type: 'GOLD',
       interest_rate: 2
     }
