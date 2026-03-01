@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Home from './pages/Home'
@@ -7,10 +8,29 @@ import Pledge from './pages/Pledge'
 import PledgeDetails from './pages/PledgeDetails'
 import Settings from './pages/Settings'
 import Financers from './pages/Financers'
+import ConnectionStatus from './components/ConnectionStatus'
+import { keepAlive } from './lib/supabase'
+
+// Keep-alive interval (every 4 minutes to prevent Supabase free tier pause)
+const KEEP_ALIVE_INTERVAL = 4 * 60 * 1000
 
 function App() {
+  // Set up keep-alive ping to prevent Supabase free tier from pausing
+  useEffect(() => {
+    // Initial ping
+    keepAlive()
+    
+    // Set up interval
+    const intervalId = setInterval(() => {
+      keepAlive()
+    }, KEEP_ALIVE_INTERVAL)
+
+    return () => clearInterval(intervalId)
+  }, [])
+
   return (
     <BrowserRouter>
+      <ConnectionStatus />
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
@@ -27,5 +47,3 @@ function App() {
 }
 
 export default App
-
-

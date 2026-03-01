@@ -1,17 +1,14 @@
-import { createClient } from '@supabase/supabase-js'
 import { format } from 'date-fns'
+import { 
+  supabase, 
+  isSupabaseConfigured, 
+  executeWithRetry,
+  checkConnection,
+  keepAlive 
+} from './supabaseClient'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-// Check if Supabase is configured
-const isSupabaseConfigured = supabaseUrl && supabaseKey && 
-  supabaseUrl !== 'your_supabase_project_url' && 
-  supabaseKey !== 'your_supabase_anon_key'
-
-export const supabase = isSupabaseConfigured 
-  ? createClient(supabaseUrl, supabaseKey)
-  : null
+// Re-export for backward compatibility
+export { supabase, isSupabaseConfigured, checkConnection, keepAlive }
 
 // ============================================
 // MOCK DATA STORAGE (localStorage fallback)

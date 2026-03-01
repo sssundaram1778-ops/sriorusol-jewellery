@@ -17,42 +17,58 @@ export const usePledgeStore = create((set, get) => ({
   },
   isLoading: false,
   error: null,
+  connectionError: null, // Track connection-specific errors
 
   // Actions
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
-  clearError: () => set({ error: null }),
+  clearError: () => set({ error: null, connectionError: null }),
 
-  // Fetch all pledges (active + closed)
+  // Fetch all pledges (active + closed) with retry
   fetchAllPledges: async () => {
-    set({ isLoading: true, error: null })
+    set({ isLoading: true, error: null, connectionError: null })
     try {
       const data = await api.getAllPledges()
       set({ pledges: data, isLoading: false })
     } catch (error) {
-      set({ error: error.message, isLoading: false })
+      const isConnectionError = error.message?.includes('fetch') || error.message?.includes('network')
+      set({ 
+        error: error.message, 
+        connectionError: isConnectionError ? error.message : null,
+        isLoading: false 
+      })
     }
   },
 
-  // Fetch active pledges
+  // Fetch active pledges with retry
   fetchActivePledges: async () => {
-    set({ isLoading: true, error: null })
+    set({ isLoading: true, error: null, connectionError: null })
     try {
       const data = await api.getActivePledges()
       set({ activePledges: data, isLoading: false })
     } catch (error) {
-      set({ error: error.message, isLoading: false })
+      const isConnectionError = error.message?.includes('fetch') || error.message?.includes('network')
+      set({ 
+        error: error.message, 
+        connectionError: isConnectionError ? error.message : null,
+        isLoading: false 
+      })
     }
   },
 
-  // Fetch closed pledges
+  // Fetch closed pledges with retry
   fetchClosedPledges: async () => {
-    set({ isLoading: true, error: null })
+    set({ isLoading: true, error: null, connectionError: null })
     try {
       const data = await api.getClosedPledges()
       set({ closedPledges: data, isLoading: false })
     } catch (error) {
-      set({ error: error.message, isLoading: false })
+      const isConnectionError = error.message?.includes('fetch') || error.message?.includes('network')
+      set({ 
+        error: error.message, 
+        connectionError: isConnectionError ? error.message : null,
+        isLoading: false 
+      })
     }
   },
 
