@@ -140,8 +140,8 @@ export default function PledgeDetails() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'ACTIVE': return 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-      case 'CLOSED': return 'bg-gray-100 text-gray-600 border border-gray-200'
-      case 'REPLEDGED': return 'bg-blue-50 text-blue-700 border border-blue-200'
+      case 'CLOSED': return 'bg-blue-50 text-blue-700 border border-blue-200'
+      case 'REPLEDGED': return 'bg-orange-50 text-orange-700 border border-orange-200'
       default: return 'bg-gray-100 text-gray-600 border border-gray-200'
     }
   }
@@ -149,7 +149,7 @@ export default function PledgeDetails() {
   const getStatusLabel = (status) => {
     switch (status) {
       case 'ACTIVE': return t('pledge.active')
-      case 'CLOSED': return t('pledge.closed')
+      case 'CLOSED': return t('pledge.returned')
       case 'REPLEDGED': return t('pledge.repledged')
       default: return status
     }

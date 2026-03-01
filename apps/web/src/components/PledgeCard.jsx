@@ -24,7 +24,7 @@ export default function PledgeCard({ pledge, showStatus = false }) {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'ACTIVE': return { bg: 'bg-emerald-500', label: t('pledge.active') }
-      case 'CLOSED': return { bg: 'bg-slate-400', label: t('pledge.closed') }
+      case 'CLOSED': return { bg: 'bg-blue-500', label: t('pledge.returned') }
       case 'REPLEDGED': return { bg: 'bg-orange-500', label: t('pledge.repledged') }
       default: return { bg: 'bg-slate-400', label: status }
     }

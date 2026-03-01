@@ -73,12 +73,12 @@ export default function HistoryPledges() {
           {/* Title Row with PDF Button */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-500 rounded-xl flex items-center justify-center shadow-md shadow-red-500/25">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/25">
                 <History className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-slate-800">{t('nav.history')}</h1>
-                <p className="text-[11px] text-slate-500">{closedPledges.length} closed pledges</p>
+                <h1 className="text-lg font-bold text-slate-800">Returned Pledges</h1>
+                <p className="text-[11px] text-slate-500">{closedPledges.length} returned pledges</p>
               </div>
             </div>
             {/* Export PDF Button */}
