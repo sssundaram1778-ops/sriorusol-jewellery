@@ -1,5 +1,5 @@
 import { Toaster } from 'react-hot-toast'
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import BottomNav from './BottomNav'
 import Sidebar from './Sidebar'
@@ -8,7 +8,6 @@ import OfflineIndicator from './OfflineIndicator'
 import UpdatePrompt from './UpdatePrompt'
 
 export default function Layout() {
-  const location = useLocation()
   const [isMobile, setIsMobile] = useState(true)
 
   useEffect(() => {
@@ -21,7 +20,7 @@ export default function Layout() {
   }, [])
 
   return (
-    <div className="min-h-screen min-h-dvh bg-gray-50 flex">
+    <div className="min-h-screen min-h-dvh bg-slate-50 flex">
       <Toaster 
         position="top-center"
         toastOptions={{
@@ -31,6 +30,7 @@ export default function Layout() {
             color: '#1E3A5F',
             border: '1px solid rgba(0, 0, 0, 0.08)',
             boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
+            borderRadius: '12px',
           },
           success: {
             iconTheme: {
@@ -52,12 +52,12 @@ export default function Layout() {
       <UpdatePrompt />
       <InstallPrompt />
       
-      {/* Desktop Sidebar */}
+      {/* Desktop Sidebar - width 72 (18rem) */}
       {!isMobile && <Sidebar />}
       
       {/* Main Content */}
-      <main className={`flex-1 ${!isMobile ? 'lg:ml-64' : 'pb-20'}`}>
-        <div className={`${!isMobile ? 'max-w-6xl mx-auto p-4 sm:p-6 lg:p-8' : 'max-w-lg mx-auto px-4 py-4'} animate-slide-up`}>
+      <main className={`flex-1 ${!isMobile ? 'lg:ml-72' : 'pb-20'}`}>
+        <div className={`${!isMobile ? 'max-w-5xl mx-auto p-6 lg:p-8' : ''} animate-slide-up`}>
           <Outlet />
         </div>
       </main>
@@ -67,5 +67,3 @@ export default function Layout() {
     </div>
   )
 }
-
-
