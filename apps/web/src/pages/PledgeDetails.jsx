@@ -33,6 +33,8 @@ export default function PledgeDetails() {
   const [showOwnerRepledgeHistory, setShowOwnerRepledgeHistory] = useState(true)
   const [canceledDate, setCanceledDate] = useState(new Date().toISOString().split('T')[0])
   const [returnPledgeNo, setReturnPledgeNo] = useState('')
+  const [returnAmount, setReturnAmount] = useState('')
+  const [isReturning, setIsReturning] = useState(false)
 
   const { 
     currentPledge, 
@@ -40,6 +42,7 @@ export default function PledgeDetails() {
     fetchPledgeById, 
     closePledge, 
     addAmount,
+    createPledge,
     createRepledge,
     createAdditionalAmountRepledge,
     createOwnerRepledge,
@@ -60,14 +63,45 @@ export default function PledgeDetails() {
   }
 
   const handleClosePledge = async () => {
+    if (!returnPledgeNo.trim() || !returnAmount) {
+      toast.error('Please enter pledge number and amount')
+      return
+    }
+    
+    setIsReturning(true)
     try {
+      // 1. Close the current pledge
       await closePledge(id, canceledDate, returnPledgeNo)
-      toast.success(t('messages.pledgeClosed'))
+      
+      // 2. Create new pledge with same customer details but new pledge number
+      const newPledgeData = {
+        pledgeNo: returnPledgeNo,
+        date: canceledDate,
+        customerName: currentPledge.customer_name,
+        place: currentPledge.place || '',
+        phoneNumber: currentPledge.phone_number || '',
+        loanAmount: parseFloat(returnAmount),
+        jewelsDetails: currentPledge.jewels_details || '',
+        noOfItems: currentPledge.no_of_items || 1,
+        grossWeight: currentPledge.gross_weight || 0,
+        netWeight: currentPledge.net_weight || 0,
+        interestRate: currentPledge.interest_rate || 2,
+        jewelType: currentPledge.jewel_type || 'GOLD'
+      }
+      
+      const newPledge = await createPledge(newPledgeData)
+      
+      toast.success('Pledge returned and new pledge created!')
       setShowCloseModal(false)
       setReturnPledgeNo('')
-      navigate('/past')
+      setReturnAmount('')
+      
+      // Navigate to the new pledge
+      navigate(`/pledge/${newPledge.id}`)
     } catch (error) {
-      toast.error(error.message || t('common.error'))
+      toast.error(error.message || 'Failed to return pledge')
+    } finally {
+      setIsReturning(false)
     }
   }
 
@@ -601,25 +635,43 @@ export default function PledgeDetails() {
       {/* Close Pledge Modal */}
       {showCloseModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-5 max-w-sm w-full border border-gray-200">
-            <h3 className="text-base font-bold mb-3 text-gray-900">Return Pledge</h3>
-            <p className="text-gray-600 text-sm mb-4">Enter return details to mark this pledge as returned.</p>
+          <div className="bg-white rounded-xl p-5 max-w-md w-full border border-gray-200">
+            <h3 className="text-lg font-bold mb-2 text-gray-900">Return & Create New Pledge</h3>
+            <p className="text-gray-600 text-sm mb-4">This will close current pledge and create a new one with the same customer details.</p>
             
-            {/* Return Pledge Number */}
+            {/* Current Pledge Info */}
+            <div className="bg-blue-50 rounded-lg p-3 mb-4 text-sm">
+              <p className="font-medium text-blue-800">Current: {currentPledge?.pledge_no}</p>
+              <p className="text-blue-600">Customer: {currentPledge?.customer_name}</p>
+            </div>
+            
+            {/* New Pledge Number */}
             <div className="mb-4">
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Return Pledge No *</label>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">New Pledge No *</label>
               <input
                 type="text"
                 value={returnPledgeNo}
                 onChange={(e) => setReturnPledgeNo(e.target.value)}
-                placeholder="Enter pledge number"
+                placeholder="Enter new pledge number"
+                className="w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"
+              />
+            </div>
+
+            {/* New Loan Amount */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-gray-700 mb-1 block">New Loan Amount (₹) *</label>
+              <input
+                type="number"
+                value={returnAmount}
+                onChange={(e) => setReturnAmount(e.target.value)}
+                placeholder="Enter loan amount"
                 className="w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"
               />
             </div>
 
             {/* Return Date */}
             <div className="mb-4">
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Return Date *</label>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Date *</label>
               <input
                 type="date"
                 value={canceledDate}
@@ -633,17 +685,22 @@ export default function PledgeDetails() {
                 onClick={() => {
                   setShowCloseModal(false)
                   setReturnPledgeNo('')
+                  setReturnAmount('')
                 }}
-                className="flex-1 h-10 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium text-sm transition-colors"
+                disabled={isReturning}
+                className="flex-1 h-10 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium text-sm transition-colors disabled:opacity-50"
               >
-                {t('pledge.cancel')}
+                Cancel
               </button>
               <button 
                 onClick={handleClosePledge}
-                disabled={!returnPledgeNo.trim()}
-                className="flex-1 h-10 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!returnPledgeNo.trim() || !returnAmount || isReturning}
+                className="flex-1 h-10 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Confirm Return
+                {isReturning ? (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                ) : null}
+                Return & Create New
               </button>
             </div>
           </div>
