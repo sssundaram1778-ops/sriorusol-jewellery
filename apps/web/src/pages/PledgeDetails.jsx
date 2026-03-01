@@ -580,18 +580,18 @@ export default function PledgeDetails() {
                 Edit
               </button>
               <button 
-                onClick={() => setShowAdditionalReturnModal(true)}
+                onClick={() => setShowAddAmountModal(true)}
                 className="flex-1 h-11 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-2 text-sm font-bold transition-all"
               >
-                <RefreshCw className="w-4 h-4" />
-                Return
+                <Plus className="w-4 h-4" />
+                Add Amount
               </button>
               <button 
                 onClick={() => setShowCloseModal(true)}
-                className="flex-1 h-11 rounded-xl bg-red-500 hover:bg-red-600 text-white flex items-center justify-center gap-2 text-sm font-bold transition-all"
+                className="flex-1 h-11 rounded-xl bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center gap-2 text-sm font-bold transition-all"
               >
                 <XCircle className="w-4 h-4" />
-                Close
+                Return
               </button>
             </div>
           </div>
