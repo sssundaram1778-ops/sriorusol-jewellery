@@ -76,18 +76,18 @@ export default function PledgeDetails() {
       
       // 2. Create new pledge with same customer details but new pledge number
       const newPledgeData = {
-        pledgeNo: returnPledgeNo,
+        pledge_no: returnPledgeNo,
         date: canceledDate,
-        customerName: currentPledge.customer_name,
+        customer_name: currentPledge.customer_name,
         place: currentPledge.place || '',
-        phoneNumber: currentPledge.phone_number || '',
-        loanAmount: parseFloat(returnAmount),
-        jewelsDetails: currentPledge.jewels_details || '',
-        noOfItems: currentPledge.no_of_items || 1,
-        grossWeight: currentPledge.gross_weight || 0,
-        netWeight: currentPledge.net_weight || 0,
-        interestRate: currentPledge.interest_rate || 2,
-        jewelType: currentPledge.jewel_type || 'GOLD'
+        phone_number: currentPledge.phone_number || '',
+        initialAmount: parseFloat(returnAmount),
+        jewels_details: currentPledge.jewels_details || '',
+        no_of_items: currentPledge.no_of_items || 1,
+        gross_weight: parseFloat(currentPledge.gross_weight) || 0,
+        net_weight: parseFloat(currentPledge.net_weight) || 0,
+        interest_rate: parseFloat(currentPledge.interest_rate) || 2,
+        jewel_type: currentPledge.jewel_type || 'GOLD'
       }
       
       const newPledge = await createPledge(newPledgeData)
