@@ -920,8 +920,15 @@ export const getFinancerList = async () => {
   if (sql) {
     try {
       const result = await sql`
-        SELECT DISTINCT financer_name as name, financer_place as place 
-        FROM owner_repledges ORDER BY financer_name ASC
+        SELECT 
+          financer_name as name, 
+          financer_place as place,
+          SUM(amount) as total_amount,
+          COUNT(*) as pledge_count,
+          COUNT(CASE WHEN status = 'ACTIVE' THEN 1 END) as active_count
+        FROM owner_repledges 
+        GROUP BY financer_name, financer_place
+        ORDER BY financer_name ASC
       `
       return result || []
     } catch (error) {
@@ -933,24 +940,33 @@ export const getFinancerList = async () => {
   // Mock fallback
   const ownerRepledges = getStoredData(OWNER_REPLEDGES_KEY)
   const standaloneFinancers = getStoredData(FINANCERS_KEY)
-  const uniqueFinancers = []
-  const seen = new Set()
+  const financerMap = new Map()
   
   standaloneFinancers.forEach(item => {
-    if (!seen.has(item.name)) {
-      seen.add(item.name)
-      uniqueFinancers.push({ name: item.name, place: item.place })
+    if (!financerMap.has(item.name)) {
+      financerMap.set(item.name, { name: item.name, place: item.place, total_amount: 0, pledge_count: 0, active_count: 0 })
     }
   })
   
   ownerRepledges.forEach(item => {
-    if (!seen.has(item.financer_name)) {
-      seen.add(item.financer_name)
-      uniqueFinancers.push({ name: item.financer_name, place: item.financer_place })
+    if (!financerMap.has(item.financer_name)) {
+      financerMap.set(item.financer_name, { 
+        name: item.financer_name, 
+        place: item.financer_place, 
+        total_amount: 0, 
+        pledge_count: 0,
+        active_count: 0
+      })
+    }
+    const financer = financerMap.get(item.financer_name)
+    financer.total_amount += (item.amount || 0)
+    financer.pledge_count += 1
+    if (item.status === 'ACTIVE') {
+      financer.active_count += 1
     }
   })
   
-  return uniqueFinancers.sort((a, b) => a.name.localeCompare(b.name))
+  return Array.from(financerMap.values()).sort((a, b) => a.name.localeCompare(b.name))
 }
 
 export const addFinancer = async (financerData) => {
