@@ -6,13 +6,46 @@ const getDatabaseUrl = () => {
 }
 
 let sql = null
+let dbUrl = null
 try {
-  const dbUrl = getDatabaseUrl()
+  dbUrl = getDatabaseUrl()
   if (dbUrl) {
     sql = neon(dbUrl)
   }
 } catch (e) {
   console.error('Failed to initialize database:', e.message)
+}
+
+// Helper to execute raw parameterized SQL using neon's tagged template
+const executeRawSql = async (query, params = []) => {
+  if (!dbUrl) throw new Error('Database not configured')
+  
+  // Create a fresh connection
+  const rawSql = neon(dbUrl)
+  
+  if (!params || params.length === 0) {
+    // No params - create a simple tagged template
+    const strings = Object.assign([query], { raw: [query] })
+    return rawSql(strings)
+  }
+  
+  // With params - split query by $n placeholders and construct tagged template
+  const regex = /\$(\d+)/g
+  const queryParts = []
+  let lastIndex = 0
+  let match
+  
+  while ((match = regex.exec(query)) !== null) {
+    queryParts.push(query.slice(lastIndex, match.index))
+    lastIndex = regex.lastIndex
+  }
+  queryParts.push(query.slice(lastIndex))
+  
+  // Create template strings array with raw property
+  const strings = Object.assign(queryParts, { raw: queryParts })
+  
+  // Call neon with template strings and spread params
+  return rawSql(strings, ...params)
 }
 
 export default async function handler(req, res) {
@@ -45,9 +78,13 @@ export default async function handler(req, res) {
         if (!data.query) {
           return res.status(400).json({ error: 'Query required' })
         }
-        // Execute parameterized query
-        const rawResult = await sql.unsafe(data.query, data.params || [])
-        return res.json({ data: rawResult })
+        try {
+          const rawResult = await executeRawSql(data.query, data.params || [])
+          return res.json({ data: rawResult })
+        } catch (rawError) {
+          console.error('Raw SQL error:', rawError.message, '\nQuery:', data.query)
+          return res.status(500).json({ error: rawError.message })
+        }
 
       // ============ PLEDGES ============
       case 'getPledges':
@@ -111,6 +148,43 @@ export default async function handler(req, res) {
           ORDER BY financer_name
         `
         return res.json({ data: financers.map(f => f.financer_name) })
+
+      case 'getFinancerList':
+        // Get list of financers with totals - from owner_repledges table
+        const financerList = await sql`
+          SELECT 
+            MAX(TRIM(o.financer_name)) as name, 
+            MAX(o.financer_place) as place,
+            SUM(o.amount) as total_amount,
+            SUM(CASE WHEN o.status = 'ACTIVE' AND p.status = 'ACTIVE' THEN o.amount ELSE 0 END) as active_amount,
+            SUM(CASE WHEN o.status = 'CLOSED' OR p.status = 'CLOSED' THEN o.amount ELSE 0 END) as closed_amount,
+            COUNT(*) as pledge_count,
+            COUNT(CASE WHEN o.status = 'ACTIVE' AND p.status = 'ACTIVE' THEN 1 END) as active_count,
+            COUNT(CASE WHEN o.status = 'CLOSED' OR p.status = 'CLOSED' THEN 1 END) as closed_count
+          FROM owner_repledges o
+          LEFT JOIN pledges p ON o.pledge_id = p.id
+          GROUP BY LOWER(TRIM(o.financer_name))
+          ORDER BY MAX(TRIM(o.financer_name)) ASC
+        `
+        return res.json({ data: financerList })
+
+      case 'getOwnerRepledgesByFinancer':
+        // Get pledges by financer name
+        const financerPledges = await sql`
+          SELECT o.*, 
+            p.pledge_no, p.customer_name, p.jewels_details, p.gross_weight, p.net_weight, p.date as pledge_date, p.phone_number, p.status as pledge_status, p.no_of_items,
+            CASE WHEN p.status = 'CLOSED' THEN 'CLOSED' ELSE o.status END as effective_status
+          FROM owner_repledges o
+          LEFT JOIN pledges p ON o.pledge_id = p.id
+          WHERE LOWER(TRIM(o.financer_name)) = LOWER(TRIM(${data.financer_name}))
+          ORDER BY o.created_at DESC
+        `
+        // Map effective_status to status
+        const mappedPledges = (financerPledges || []).map(r => ({
+          ...r,
+          status: r.effective_status || r.status
+        }))
+        return res.json({ data: mappedPledges })
 
       // ============ PLEDGE AMOUNTS (Financer) ============
       case 'getPledgeAmounts':

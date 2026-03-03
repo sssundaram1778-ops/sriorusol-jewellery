@@ -12,6 +12,31 @@ export { sql, isNeonConfigured, checkConnection, keepAlive }
 // Legacy alias removed
 // Legacy alias removed
 
+// Helper to detect if we should use API
+const shouldUseApi = () => {
+  if (typeof navigator === 'undefined') return false
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  const isProduction = typeof window !== 'undefined' && 
+    window.location.hostname !== 'localhost' && 
+    window.location.hostname !== '127.0.0.1'
+  return isMobile || isProduction
+}
+
+// Helper to make API calls
+const apiCall = async (action, data = {}) => {
+  const apiUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/db` : '/api/db'
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, data }),
+  })
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.error || `API request failed: ${response.status}`)
+  }
+  return response.json()
+}
+
 // ============================================
 // MOCK DATA STORAGE (localStorage fallback)
 // ============================================
@@ -956,6 +981,17 @@ export const getActiveOwnerRepledges = async () => {
 const FINANCERS_KEY = 'sriorusol_financers'
 
 export const getFinancerList = async () => {
+  // Use API on mobile/production for better compatibility
+  if (shouldUseApi()) {
+    try {
+      const result = await apiCall('getFinancerList')
+      return result.data || []
+    } catch (error) {
+      console.error('Error getting financer list via API:', error)
+      return []
+    }
+  }
+  
   if (sql) {
     try {
       // Join with pledges table to check pledge status
@@ -1083,6 +1119,17 @@ export const deleteFinancer = async (name) => {
 }
 
 export const getOwnerRepledgesByFinancer = async (financerName) => {
+  // Use API on mobile/production for better compatibility
+  if (shouldUseApi()) {
+    try {
+      const result = await apiCall('getOwnerRepledgesByFinancer', { financer_name: financerName })
+      return result.data || []
+    } catch (error) {
+      console.error('Error getting owner repledges by financer via API:', error)
+      return []
+    }
+  }
+  
   if (sql) {
     try {
       // Include pledge status to determine effective status
