@@ -1,8 +1,10 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
   "installCommand": "npm install",
+  "public": true,
   "crons": [
     {
       "path": "/api/keep-alive",
