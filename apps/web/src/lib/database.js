@@ -1,3 +1,3 @@
-// Main database exports - uses API client for server-side database access
-// This ensures mobile compatibility by routing all DB calls through Vercel API
-export * from './apiClient'
+// Main database exports - uses neonDatabase which has hybrid API/direct connection
+// This ensures mobile compatibility by using API when needed
+export * from './neonDatabase'
