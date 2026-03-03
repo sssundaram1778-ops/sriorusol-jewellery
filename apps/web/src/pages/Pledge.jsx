@@ -106,9 +106,9 @@ export default function Pledge() {
   }
 
   const tabs = [
-    { key: 'ACTIVE', label: 'Active', icon: CheckCircle, color: 'emerald', count: activePledges?.length || 0 },
-    { key: 'CLOSED', label: 'Returned', icon: XCircle, color: 'blue', count: closedPledges?.length || 0 },
-    { key: 'ALL', label: 'All', icon: List, color: 'slate', count: pledges?.length || 0 }
+    { key: 'ACTIVE', label: t('pledge.active'), icon: CheckCircle, color: 'emerald', count: activePledges?.length || 0 },
+    { key: 'CLOSED', label: t('pledge.closed'), icon: XCircle, color: 'red', count: closedPledges?.length || 0 },
+    { key: 'ALL', label: t('nav.allData'), icon: List, color: 'blue', count: pledges?.length || 0 }
   ]
 
   return (

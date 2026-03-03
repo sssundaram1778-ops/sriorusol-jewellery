@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { getFinancerList, getOwnerRepledgesByFinancer } from '../lib/database'
 import { downloadFinancerPDF } from '../lib/pdfGenerator'
-import { Landmark, Search, ChevronRight, Calendar, Wallet, FileText, Download, X, ChevronLeft } from 'lucide-react'
+import { Landmark, Search, ChevronRight, Calendar, Wallet, FileText, Download, X, ChevronLeft, Gem } from 'lucide-react'
 import { format } from 'date-fns'
 
 export default function Financers() {
@@ -17,6 +17,8 @@ export default function Financers() {
   const [financerPledges, setFinancerPledges] = useState([])
   const [loadingPledges, setLoadingPledges] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [pledgeTab, setPledgeTab] = useState('ACTIVE') // 'ACTIVE', 'CLOSED', 'ALL'
+  const [listTab, setListTab] = useState('ACTIVE') // Tab for financer list: 'ACTIVE', 'CLOSED', 'ALL'
 
   useEffect(() => {
     loadFinancers()
@@ -36,6 +38,7 @@ export default function Financers() {
 
   const handleFinancerClick = async (financer) => {
     setSelectedFinancer(financer)
+    setPledgeTab('ACTIVE') // Reset to active tab when selecting financer
     setLoadingPledges(true)
     try {
       const pledges = await getOwnerRepledgesByFinancer(financer.name)
@@ -62,16 +65,22 @@ export default function Financers() {
     }).format(num)
   }
 
-  // Export selected financer data to PDF
+  // Export selected financer data to PDF based on current tab
   const exportSelectedFinancerToPDF = () => {
-    if (!selectedFinancer || financerPledges.length === 0) {
+    if (!selectedFinancer || filteredPledges.length === 0) {
       toast.error(t('export.selectFinancerFirst'))
       return
     }
 
     setExporting(true)
     try {
-      downloadFinancerPDF(selectedFinancer.name, selectedFinancer.place, financerPledges)
+      // Add tab info to financer name for PDF title
+      const tabSuffix = pledgeTab === 'ACTIVE' 
+        ? ' (Active)' 
+        : pledgeTab === 'CLOSED' 
+          ? ' (Closed)' 
+          : ' (All)'
+      downloadFinancerPDF(selectedFinancer.name + tabSuffix, selectedFinancer.place, filteredPledges)
       toast.success(t('export.success'))
     } catch (error) {
       console.error('Export error:', error)
@@ -86,15 +95,70 @@ export default function Financers() {
     (f.place && f.place.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
-  // Calculate total amount for selected financer
-  const totalAmount = financerPledges.reduce((sum, p) => sum + (p.amount || 0), 0)
-  const activeCount = financerPledges.filter(p => p.status === 'ACTIVE').length
+  // Filter financers based on list tab
+  const listFilteredFinancers = filteredFinancers.filter(f => {
+    if (listTab === 'ACTIVE') return (f.active_count || 0) > 0
+    if (listTab === 'CLOSED') return (f.closed_count || 0) > 0 || ((f.pledge_count || 0) > 0 && (f.active_count || 0) === 0)
+    return true // ALL
+  })
+
+  // Calculate list tab counts
+  const activeFinancersCount = filteredFinancers.filter(f => (f.active_count || 0) > 0).length
+  const closedFinancersCount = filteredFinancers.filter(f => (f.closed_count || 0) > 0 || ((f.pledge_count || 0) > 0 && (f.active_count || 0) === 0)).length
+  const allFinancersCount = filteredFinancers.length
+
+  // Calculate total amounts for list tabs
+  const activeFinancersTotalAmount = filteredFinancers
+    .filter(f => (f.active_count || 0) > 0)
+    .reduce((sum, f) => sum + (parseFloat(f.active_amount) || parseFloat(f.total_amount) || 0), 0)
+  const closedFinancersTotalAmount = filteredFinancers
+    .filter(f => (f.closed_count || 0) > 0 || ((f.pledge_count || 0) > 0 && (f.active_count || 0) === 0))
+    .reduce((sum, f) => sum + (parseFloat(f.closed_amount) || 0), 0)
+  const allFinancersTotalAmount = filteredFinancers.reduce((sum, f) => sum + (parseFloat(f.total_amount) || 0), 0)
+
+  // Get current list tab amount
+  const currentListTabAmount = listTab === 'ACTIVE' 
+    ? activeFinancersTotalAmount 
+    : listTab === 'CLOSED' 
+      ? closedFinancersTotalAmount 
+      : allFinancersTotalAmount
+
+  // Calculate counts
+  const activePledges = financerPledges.filter(p => p.status === 'ACTIVE')
+  const closedPledges = financerPledges.filter(p => p.status === 'CLOSED')
+  const activeCount = activePledges.length
+  const closedCount = closedPledges.length
+  
+  // Calculate total amounts
+  const totalActiveAmount = activePledges.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+  const totalClosedAmount = closedPledges.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+  const totalAllAmount = financerPledges.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+
+  // Get current tab's total amount
+  const currentTabAmount = pledgeTab === 'ACTIVE' 
+    ? totalActiveAmount 
+    : pledgeTab === 'CLOSED' 
+      ? totalClosedAmount 
+      : totalAllAmount
+
+  const currentTabLabel = pledgeTab === 'ACTIVE' 
+    ? t('pledge.active') 
+    : pledgeTab === 'CLOSED' 
+      ? t('pledge.closed') 
+      : t('nav.allData')
+
+  // Filter pledges based on selected tab
+  const filteredPledges = pledgeTab === 'ALL' 
+    ? financerPledges 
+    : pledgeTab === 'ACTIVE' 
+      ? activePledges 
+      : closedPledges
 
   // If a financer is selected, show details view (mobile-friendly)
   if (selectedFinancer) {
     return (
       <div className="min-h-screen bg-blue-50 pb-20">
-        {/* Header with Back */}
+        {/* Header with Back and PDF Button */}
         <div className="bg-blue-50 border-b border-blue-200/50">
           <div className="px-4 py-3 flex items-center gap-3">
             <button 
@@ -109,35 +173,75 @@ export default function Financers() {
                 <p className="text-xs text-slate-500">{selectedFinancer.place}</p>
               )}
             </div>
+            {/* PDF Button in Header */}
+            <button
+              onClick={exportSelectedFinancerToPDF}
+              disabled={exporting}
+              className="h-10 px-4 bg-slate-50 hover:bg-slate-200 text-slate-700 rounded-xl flex items-center gap-2 font-medium text-sm transition-all active:scale-95 disabled:opacity-50 border border-slate-200"
+            >
+              {exporting ? (
+                <div className="w-4 h-4 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              <span>PDF</span>
+            </button>
           </div>
         </div>
 
         <div className="px-4 py-4 space-y-4">
-          {/* Summary Card */}
-          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-5 text-white shadow-lg">
-            <div className="flex justify-between items-center mb-4">
+          {/* Tabs */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPledgeTab('ACTIVE')}
+              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-bold transition-all ${
+                pledgeTab === 'ACTIVE'
+                  ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {t('pledge.active')} ({activeCount})
+            </button>
+            <button
+              onClick={() => setPledgeTab('CLOSED')}
+              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-bold transition-all ${
+                pledgeTab === 'CLOSED'
+                  ? 'bg-red-500 text-white shadow-md shadow-red-500/30'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {t('pledge.closed')} ({closedCount})
+            </button>
+            <button
+              onClick={() => setPledgeTab('ALL')}
+              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-bold transition-all ${
+                pledgeTab === 'ALL'
+                  ? 'bg-blue-500 text-white shadow-md shadow-blue-500/30'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {t('nav.allData')} ({financerPledges.length})
+            </button>
+          </div>
+
+          {/* Summary Card - Dynamic based on tab */}
+          <div className={`rounded-2xl p-5 text-white shadow-lg ${
+            pledgeTab === 'ACTIVE' 
+              ? 'bg-gradient-to-br from-emerald-500 to-emerald-600' 
+              : pledgeTab === 'CLOSED' 
+                ? 'bg-gradient-to-br from-red-500 to-red-600'
+                : 'bg-gradient-to-br from-blue-600 to-blue-700'
+          }`}>
+            <div className="flex justify-between items-center">
               <div>
-                <p className="text-blue-200 text-sm">{t('financers.totalAmount')}</p>
-                <p className="text-3xl font-bold">{formatCurrency(totalAmount)}</p>
+                <p className="text-white/70 text-sm">{t('financers.totalAmount')} ({currentTabLabel})</p>
+                <p className="text-3xl font-bold">{formatCurrency(currentTabAmount)}</p>
               </div>
               <div className="text-right">
-                <p className="text-blue-200 text-sm">{t('financers.activePledges')}</p>
-                <p className="text-2xl font-bold">{activeCount} / {financerPledges.length}</p>
+                <p className="text-white/70 text-sm">{t('financers.pledges')}</p>
+                <p className="text-2xl font-bold">{filteredPledges.length}</p>
               </div>
             </div>
-            
-            <button
-              onClick={exportSelectedFinancerToPDF}
-              disabled={exporting}
-              className="w-full py-3 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center gap-2 font-semibold transition-all"
-            >
-              {exporting ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Download className="w-5 h-5" />
-              )}
-              {t('export.downloadPDF')}
-            </button>
           </div>
 
           {/* Pledges List */}
@@ -146,7 +250,7 @@ export default function Financers() {
               <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
               <p className="text-slate-500 text-sm">Loading pledges...</p>
             </div>
-          ) : financerPledges.length === 0 ? (
+          ) : filteredPledges.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
               <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-8 h-8 text-slate-300" />
@@ -155,58 +259,94 @@ export default function Financers() {
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-slate-500 font-medium">{financerPledges.length} Pledges</p>
-              {financerPledges.map((pledge, index) => (
+              <p className="text-sm text-slate-500 font-medium">{filteredPledges.length} Pledges</p>
+              {filteredPledges.map((pledge, index) => (
                 <div
                   key={index}
                   onClick={() => navigate(`/pledge/${pledge.pledge_id}`)}
-                  className={`bg-white rounded-xl p-4 cursor-pointer border transition-all active:scale-[0.98] ${
-                    pledge.status === 'ACTIVE' 
-                      ? 'border-blue-200 hover:border-blue-300' 
-                      : 'border-slate-100 hover:border-slate-200'
-                  }`}
+                  className="bg-white rounded-2xl overflow-hidden cursor-pointer border border-slate-200 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 active:scale-[0.98]"
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                        {pledge.pledge_no || 'N/A'}
-                      </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        pledge.status === 'ACTIVE' 
-                          ? 'bg-emerald-100 text-emerald-700' 
-                          : 'bg-slate-50 text-slate-600'
-                      }`}>
-                        {pledge.status === 'ACTIVE' ? t('pledge.active') : t('pledge.closed')}
-                      </span>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-slate-300" />
-                  </div>
-                  
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <p className="text-xs text-slate-400 mb-0.5">{t('pledge.customerName')}</p>
-                      <p className="font-semibold text-slate-800">{pledge.customer_name || '-'}</p>
-                      {pledge.phone_number && (
-                        <p className="text-xs text-slate-500">{pledge.phone_number}</p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-slate-400 mb-0.5">Amount</p>
-                      <p className="font-bold text-slate-800">{formatCurrency(pledge.amount)}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>Debt: {formatDate(pledge.debt_date)}</span>
-                    </div>
-                    {pledge.release_date && (
-                      <div className="flex items-center gap-1">
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-blue-600 via-blue-600 to-blue-500 px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-bold text-white tracking-wide">
+                          {pledge.pledge_no || 'N/A'}
+                        </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          pledge.status === 'ACTIVE' 
+                            ? 'bg-emerald-500 text-white' 
+                            : 'bg-red-500 text-white'
+                        }`}>
+                          {pledge.status === 'ACTIVE' ? t('pledge.active') : t('pledge.closed')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-blue-100">
                         <Calendar className="w-3.5 h-3.5" />
-                        <span>Released: {formatDate(pledge.release_date)}</span>
+                        <span className="text-xs font-medium">{formatDate(pledge.debt_date)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-4">
+                    {/* Customer Row */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/30 flex-shrink-0">
+                        {pledge.customer_name?.charAt(0)?.toUpperCase() || 'U'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-800 text-[15px] truncate">
+                          {pledge.customer_name || '-'}
+                        </p>
+                        {pledge.phone_number && (
+                          <p className="text-xs text-slate-500">{pledge.phone_number}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Jewels Details */}
+                    {pledge.jewels_details && (
+                      <div className="flex items-center gap-2 mb-3 px-1">
+                        <Gem className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                        <p className="text-sm text-slate-600 truncate">{pledge.jewels_details}</p>
                       </div>
                     )}
+
+                    {/* Stats Row */}
+                    <div className="flex items-center justify-between bg-blue-50 rounded-xl px-4 py-3 mb-4">
+                      <div className="text-center">
+                        <p className="text-[10px] text-blue-500 uppercase font-semibold">Items</p>
+                        <p className="text-sm font-bold text-slate-700">{pledge.no_of_items || 1}</p>
+                      </div>
+                      <div className="h-8 w-px bg-blue-200"></div>
+                      <div className="text-center">
+                        <p className="text-[10px] text-blue-500 uppercase font-semibold">Weight</p>
+                        <p className="text-sm font-bold text-slate-700">{pledge.net_weight || 0}g</p>
+                      </div>
+                      <div className="h-8 w-px bg-blue-200"></div>
+                      <div className="text-center">
+                        <p className="text-[10px] text-blue-500 uppercase font-semibold">Amount</p>
+                        <p className="text-sm font-bold text-blue-600">{formatCurrency(pledge.amount)}</p>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 text-xs text-slate-500">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Debt: {formatDate(pledge.debt_date)}</span>
+                        </div>
+                        {pledge.release_date && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>Released: {formatDate(pledge.release_date)}</span>
+                          </div>
+                        )}
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-slate-300" />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -263,8 +403,8 @@ export default function Financers() {
               <Landmark className="w-7 h-7 text-blue-600" />
             </div>
             <div>
-              <p className="text-3xl font-bold text-slate-800">{financers.length}</p>
-              <p className="text-sm text-slate-500">{t('financers.totalFinancers')}</p>
+              <p className="text-3xl font-bold text-slate-800">{formatCurrency(allFinancersTotalAmount)}</p>
+              <p className="text-sm text-slate-500">{filteredFinancers.length} {t('financers.totalFinancers')}</p>
             </div>
           </div>
         </div>

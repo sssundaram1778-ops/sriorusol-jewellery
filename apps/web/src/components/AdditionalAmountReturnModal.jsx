@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { X, RefreshCw, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react'
+import DateInput from './DateInput'
 
 const returnSchema = z.object({
   total_amount: z.number().min(1, 'Total amount must be greater than 0'),
@@ -28,7 +29,8 @@ export default function AdditionalAmountReturnModal({
     handleSubmit,
     formState: { errors },
     reset,
-    watch
+    watch,
+    setValue
   } = useForm({
     resolver: zodResolver(returnSchema),
     defaultValues: {
@@ -198,9 +200,9 @@ export default function AdditionalAmountReturnModal({
               <label className="label">
                 <span className="label-text font-medium">{t('pledge.newPledgeDate')} *</span>
               </label>
-              <input
-                type="date"
-                {...register('new_date')}
+              <DateInput
+                value={watch('new_date')}
+                onChange={(e) => setValue('new_date', e.target.value)}
                 className="input input-bordered w-full focus:border-emerald-500"
               />
               {errors.new_date && <span className="text-error text-sm mt-1">{errors.new_date.message}</span>}

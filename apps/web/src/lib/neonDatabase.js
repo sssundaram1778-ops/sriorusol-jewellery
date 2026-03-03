@@ -48,7 +48,9 @@ export const JEWEL_TYPES = {
 }
 
 // Calculate interest months based on calendar months
-// Rule: 1-15 days in a month = 0.5 month, 16+ days = 1 month
+// Rule: Month cycles start from debt date's day of month
+// Complete months counted from day X to day X
+// Remaining days: 1-15 = +0.5 month, 16+ = +1 month
 // Minimum: 1 month interest
 export const calculateInterestMonths = (startDate, endDate = new Date()) => {
   const start = new Date(startDate)
@@ -61,36 +63,42 @@ export const calculateInterestMonths = (startDate, endDate = new Date()) => {
   // Calculate total days for display
   const totalDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)))
   
-  let totalMonths = 0
-  let current = new Date(start)
-  
-  while (current <= end) {
-    const currentYear = current.getFullYear()
-    const currentMonth = current.getMonth()
-    
-    // Get the last day of current month
-    const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
-    
-    // Determine start day in this month
-    const startDayInMonth = current.getDate()
-    
-    // Determine end day in this month (either end of month or endDate)
-    const endOfThisMonth = new Date(currentYear, currentMonth + 1, 0)
-    const endDayInMonth = end < endOfThisMonth ? end.getDate() : lastDayOfMonth
-    
-    // Calculate days used in this month
-    const daysInThisMonth = endDayInMonth - startDayInMonth + 1
-    
-    // Apply rule: ≤15 days = 0.5 month, >15 days = 1 month
-    if (daysInThisMonth <= 15) {
-      totalMonths += 0.5
-    } else {
-      totalMonths += 1
-    }
-    
-    // Move to 1st of next month
-    current = new Date(currentYear, currentMonth + 1, 1)
+  // If same day or end before start, return minimum
+  if (totalDays <= 0) {
+    return { days: 1, months: 1, rawMonths: 0 }
   }
+  
+  // Calculate complete months
+  // From day X of month A to day X of month B = complete months
+  let completeMonths = (end.getFullYear() - start.getFullYear()) * 12 
+                     + (end.getMonth() - start.getMonth())
+  
+  // Check if we haven't reached the same day yet in the final month
+  if (end.getDate() < start.getDate()) {
+    completeMonths -= 1
+  }
+  
+  // Calculate remaining days after complete months
+  let remainingDays
+  if (end.getDate() >= start.getDate()) {
+    remainingDays = end.getDate() - start.getDate()
+  } else {
+    // Days from start day to end of that month + days in end month
+    const prevMonth = new Date(end.getFullYear(), end.getMonth(), 0)
+    remainingDays = (prevMonth.getDate() - start.getDate()) + end.getDate()
+  }
+  
+  // Apply remaining days rule
+  let extraMonths = 0
+  if (remainingDays > 0) {
+    if (remainingDays <= 15) {
+      extraMonths = 0.5
+    } else {
+      extraMonths = 1
+    }
+  }
+  
+  const totalMonths = completeMonths + extraMonths
   
   // Apply minimum 1 month rule
   const months = Math.max(1, totalMonths)
@@ -278,8 +286,10 @@ export const getPledgeById = async (id) => {
       const amounts = await sql`
         SELECT * FROM pledge_amounts WHERE pledge_id = ${id} ORDER BY date ASC
       `
-      const repledges = await sql`
-        SELECT * FROM repledges WHERE original_pledge_id = ${id} ORDER BY date ASC
+      
+      // Get owner repledges for this pledge
+      const ownerRepledges = await sql`
+        SELECT * FROM owner_repledges WHERE pledge_id = ${id} ORDER BY created_at DESC
       `
       
       const endDate = (pledge.status === 'CLOSED' || pledge.status === 'REPLEDGED') && pledge.canceled_date
@@ -291,7 +301,8 @@ export const getPledgeById = async (id) => {
       return {
         ...pledge,
         amounts: amounts || [],
-        repledges: repledges || [],
+        ownerRepledges: ownerRepledges || [],
+        repledges: [], // Not used anymore
         ...totals
       }
     } catch (error) {
@@ -569,13 +580,41 @@ export const updatePledge = async (id, updates) => {
   return pledges[index]
 }
 
-// Close pledge
+// Close pledge and auto-close associated financer pledges
 export const closePledge = async (id, closedDate, returnPledgeNo) => {
-  return updatePledge(id, {
+  const closeDate = closedDate || format(new Date(), 'yyyy-MM-dd')
+  
+  // Close the pledge
+  const closedPledge = await updatePledge(id, {
     status: 'CLOSED',
-    canceled_date: closedDate || format(new Date(), 'yyyy-MM-dd'),
+    canceled_date: closeDate,
     return_pledge_no: returnPledgeNo || null
   })
+  
+  // Auto-close all active owner repledges (financer pledges) for this pledge
+  if (sql) {
+    try {
+      await sql`
+        UPDATE owner_repledges 
+        SET status = 'CLOSED', release_date = ${closeDate}
+        WHERE pledge_id = ${id} AND status = 'ACTIVE'
+      `
+    } catch (error) {
+      console.error('Error closing owner repledges:', error)
+    }
+  } else {
+    // Mock fallback
+    const ownerRepledges = getStoredData(OWNER_REPLEDGES_KEY)
+    const updated = ownerRepledges.map(or => {
+      if (or.pledge_id === id && or.status === 'ACTIVE') {
+        return { ...or, status: 'CLOSED', release_date: closeDate }
+      }
+      return or
+    })
+    setStoredData(OWNER_REPLEDGES_KEY, updated)
+  }
+  
+  return closedPledge
 }
 
 // ============================================
@@ -919,16 +958,22 @@ const FINANCERS_KEY = 'sriorusol_financers'
 export const getFinancerList = async () => {
   if (sql) {
     try {
+      // Join with pledges table to check pledge status
+      // A financer pledge is only ACTIVE if both owner_repledge AND pledge are ACTIVE
       const result = await sql`
         SELECT 
-          financer_name as name, 
-          financer_place as place,
-          SUM(amount) as total_amount,
+          MAX(TRIM(o.financer_name)) as name, 
+          MAX(o.financer_place) as place,
+          SUM(o.amount) as total_amount,
+          SUM(CASE WHEN o.status = 'ACTIVE' AND p.status = 'ACTIVE' THEN o.amount ELSE 0 END) as active_amount,
+          SUM(CASE WHEN o.status = 'CLOSED' OR p.status = 'CLOSED' THEN o.amount ELSE 0 END) as closed_amount,
           COUNT(*) as pledge_count,
-          COUNT(CASE WHEN status = 'ACTIVE' THEN 1 END) as active_count
-        FROM owner_repledges 
-        GROUP BY financer_name, financer_place
-        ORDER BY financer_name ASC
+          COUNT(CASE WHEN o.status = 'ACTIVE' AND p.status = 'ACTIVE' THEN 1 END) as active_count,
+          COUNT(CASE WHEN o.status = 'CLOSED' OR p.status = 'CLOSED' THEN 1 END) as closed_count
+        FROM owner_repledges o
+        LEFT JOIN pledges p ON o.pledge_id = p.id
+        GROUP BY LOWER(TRIM(o.financer_name))
+        ORDER BY MAX(TRIM(o.financer_name)) ASC
       `
       return result || []
     } catch (error) {
@@ -939,30 +984,47 @@ export const getFinancerList = async () => {
 
   // Mock fallback
   const ownerRepledges = getStoredData(OWNER_REPLEDGES_KEY)
+  const pledges = getStoredData(STORAGE_KEYS.PLEDGES)
   const standaloneFinancers = getStoredData(FINANCERS_KEY)
   const financerMap = new Map()
   
   standaloneFinancers.forEach(item => {
-    if (!financerMap.has(item.name)) {
-      financerMap.set(item.name, { name: item.name, place: item.place, total_amount: 0, pledge_count: 0, active_count: 0 })
+    const normalizedKey = item.name?.trim().toLowerCase()
+    if (normalizedKey && !financerMap.has(normalizedKey)) {
+      financerMap.set(normalizedKey, { name: item.name.trim(), place: item.place, total_amount: 0, active_amount: 0, closed_amount: 0, pledge_count: 0, active_count: 0, closed_count: 0 })
     }
   })
   
   ownerRepledges.forEach(item => {
-    if (!financerMap.has(item.financer_name)) {
-      financerMap.set(item.financer_name, { 
-        name: item.financer_name, 
+    const normalizedKey = item.financer_name?.trim().toLowerCase()
+    if (!normalizedKey) return
+    
+    // Get pledge status
+    const pledge = pledges.find(p => p.id === item.pledge_id)
+    const pledgeIsActive = pledge?.status === 'ACTIVE'
+    const isActive = item.status === 'ACTIVE' && pledgeIsActive
+    
+    if (!financerMap.has(normalizedKey)) {
+      financerMap.set(normalizedKey, { 
+        name: item.financer_name.trim(), 
         place: item.financer_place, 
-        total_amount: 0, 
+        total_amount: 0,
+        active_amount: 0,
+        closed_amount: 0,
         pledge_count: 0,
-        active_count: 0
+        active_count: 0,
+        closed_count: 0
       })
     }
-    const financer = financerMap.get(item.financer_name)
+    const financer = financerMap.get(normalizedKey)
     financer.total_amount += (item.amount || 0)
     financer.pledge_count += 1
-    if (item.status === 'ACTIVE') {
+    if (isActive) {
       financer.active_count += 1
+      financer.active_amount += (item.amount || 0)
+    } else {
+      financer.closed_count += 1
+      financer.closed_amount += (item.amount || 0)
     }
   })
   
@@ -1023,14 +1085,22 @@ export const deleteFinancer = async (name) => {
 export const getOwnerRepledgesByFinancer = async (financerName) => {
   if (sql) {
     try {
+      // Include pledge status to determine effective status
+      // If pledge is CLOSED, the financer pledge is also considered CLOSED
       const result = await sql`
-        SELECT o.*, p.pledge_no, p.customer_name, p.jewels_details, p.gross_weight, p.net_weight, p.date as pledge_date
+        SELECT o.*, 
+          p.pledge_no, p.customer_name, p.jewels_details, p.gross_weight, p.net_weight, p.date as pledge_date, p.phone_number, p.status as pledge_status,
+          CASE WHEN p.status = 'CLOSED' THEN 'CLOSED' ELSE o.status END as effective_status
         FROM owner_repledges o
         LEFT JOIN pledges p ON o.pledge_id = p.id
-        WHERE o.financer_name = ${financerName}
+        WHERE LOWER(TRIM(o.financer_name)) = LOWER(TRIM(${financerName}))
         ORDER BY o.created_at DESC
       `
-      return result || []
+      // Map effective_status to status for display
+      return (result || []).map(r => ({
+        ...r,
+        status: r.effective_status || r.status
+      }))
     } catch (error) {
       console.error('Error getting owner repledges by financer:', error)
       return []
@@ -1040,13 +1110,17 @@ export const getOwnerRepledgesByFinancer = async (financerName) => {
   // Mock fallback
   const ownerRepledges = getStoredData(OWNER_REPLEDGES_KEY)
   const pledges = getStoredData(STORAGE_KEYS.PLEDGES)
+  const normalizedName = financerName.trim().toLowerCase()
   
   return ownerRepledges
-    .filter(r => r.financer_name === financerName)
+    .filter(r => r.financer_name?.trim().toLowerCase() === normalizedName)
     .map(r => {
       const pledge = pledges.find(p => p.id === r.pledge_id)
+      // If pledge is closed, financer pledge is also closed
+      const effectiveStatus = pledge?.status === 'CLOSED' ? 'CLOSED' : r.status
       return {
         ...r,
+        status: effectiveStatus,
         pledge_no: pledge?.pledge_no,
         customer_name: pledge?.customer_name,
         jewels_details: pledge?.jewels_details,

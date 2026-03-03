@@ -24,11 +24,15 @@ export default function PledgeCard({ pledge, showStatus = false }) {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'ACTIVE': return { bg: 'bg-emerald-500', label: t('pledge.active') }
-      case 'CLOSED': return { bg: 'bg-blue-500', label: t('pledge.returned') }
+      case 'CLOSED': return { bg: 'bg-red-500', label: t('pledge.closed') }
       case 'REPLEDGED': return { bg: 'bg-orange-500', label: t('pledge.repledged') }
       default: return { bg: 'bg-slate-400', label: status }
     }
   }
+
+  // Check if this pledge is a returned pledge (has parent) or was returned (has return_pledge)
+  const isReturnedPledge = pledge.parent_pledge_id || pledge.parent_pledge_no
+  const wasReturned = pledge.return_pledge_id || pledge.return_pledge_no
 
   const getJewelBadge = (type) => {
     switch (type) {
@@ -50,7 +54,7 @@ export default function PledgeCard({ pledge, showStatus = false }) {
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 via-blue-600 to-blue-500 px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-bold text-white tracking-wide">
               {pledge.pledge_no}
             </span>
@@ -58,9 +62,23 @@ export default function PledgeCard({ pledge, showStatus = false }) {
               {jewel.label}
             </span>
             {showStatus && (
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${status.bg} text-white`}>
-                {status.label}
-              </span>
+              <>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${status.bg} text-white`}>
+                  {status.label}
+                </span>
+                {/* Show Returned badge for closed pledges that were returned */}
+                {pledge.status === 'CLOSED' && wasReturned && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500 text-white">
+                    {t('pledge.returned')}
+                  </span>
+                )}
+                {/* Show Returned badge for active pledges that are a return */}
+                {pledge.status === 'ACTIVE' && isReturnedPledge && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500 text-white">
+                    {t('pledge.returned')}
+                  </span>
+                )}
+              </>
             )}
           </div>
           <div className="flex items-center gap-1.5 text-blue-100">
@@ -98,6 +116,14 @@ export default function PledgeCard({ pledge, showStatus = false }) {
           </div>
         </div>
 
+        {/* Jewels Details Row */}
+        {pledge.jewels_details && (
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <Gem className="w-4 h-4 text-amber-500 flex-shrink-0" />
+            <p className="text-sm text-slate-600 truncate">{pledge.jewels_details}</p>
+          </div>
+        )}
+
         {/* Stats Row */}
         <div className="flex items-center justify-between bg-blue-100 rounded-xl px-4 py-3 mb-4">
           <div className="text-center">
@@ -111,7 +137,7 @@ export default function PledgeCard({ pledge, showStatus = false }) {
           </div>
           <div className="h-8 w-px bg-blue-200"></div>
           <div className="text-center">
-            <p className="text-[10px] text-blue-500 uppercase font-semibold">Rate</p>
+            <p className="text-[10px] text-blue-500 uppercase font-semibold">Interest</p>
             <p className="text-sm font-bold text-blue-600">{pledge.interest_rate || 2}%</p>
           </div>
           <div className="h-8 w-px bg-blue-200"></div>

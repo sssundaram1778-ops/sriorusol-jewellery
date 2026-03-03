@@ -7,6 +7,7 @@ import { z } from 'zod'
 import toast from 'react-hot-toast'
 import { usePledgeStore } from '../store/pledgeStore'
 import { Save, X, CircleDot, ChevronLeft, Edit2 } from 'lucide-react'
+import DateInput from '../components/DateInput'
 
 const pledgeSchema = z.object({
   date: z.string().min(1, 'Date is required'),
@@ -144,9 +145,9 @@ export default function EditPledge() {
           <label className="label">
             <span className="label-text font-medium">{t('pledge.date')} *</span>
           </label>
-          <input
-            type="date"
-            {...register('date')}
+          <DateInput
+            value={watch('date')}
+            onChange={(e) => setValue('date', e.target.value)}
             className="input input-bordered w-full focus:border-blue-600"
           />
           {errors.date && <span className="text-error text-sm mt-1">{errors.date.message}</span>}

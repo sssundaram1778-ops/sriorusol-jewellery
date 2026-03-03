@@ -11,10 +11,11 @@ import ReturnModal from '../components/ReturnModal'
 import AdditionalAmountReturnModal from '../components/AdditionalAmountReturnModal'
 import OwnerRepledgeModal from '../components/OwnerRepledgeModal'
 import CloseOwnerRepledgeModal from '../components/CloseOwnerRepledgeModal'
+import DateInput from '../components/DateInput'
 import { 
   Download, XCircle, MapPin, User, Scale, Calendar, 
   Wallet, FileText, Plus, UserPlus, Percent, History,
-  Edit2, ChevronDown, ChevronUp, Gem, Clock, RefreshCw, Link, ArrowRight, Landmark
+  Edit2, ChevronDown, ChevronUp, Gem, Clock, RefreshCw, Link, ArrowRight, Landmark, X
 } from 'lucide-react'
 
 export default function PledgeDetails() {
@@ -44,6 +45,7 @@ export default function PledgeDetails() {
     closePledge, 
     addAmount,
     createPledge,
+    updatePledge,
     createRepledge,
     createAdditionalAmountRepledge,
     createOwnerRepledge,
@@ -71,10 +73,7 @@ export default function PledgeDetails() {
     
     setIsReturning(true)
     try {
-      // 1. Close the current pledge
-      await closePledge(id, canceledDate, returnPledgeNo)
-      
-      // 2. Create new pledge with same customer details but new pledge number
+      // 1. Create new pledge with same customer details but new pledge number
       const newPledgeData = {
         pledge_no: returnPledgeNo,
         date: canceledDate,
@@ -87,10 +86,21 @@ export default function PledgeDetails() {
         gross_weight: parseFloat(currentPledge.gross_weight) || 0,
         net_weight: parseFloat(currentPledge.net_weight) || 0,
         interest_rate: parseFloat(currentPledge.interest_rate) || 2,
-        jewel_type: currentPledge.jewel_type || 'GOLD'
+        jewel_type: currentPledge.jewel_type || 'GOLD',
+        parent_pledge_id: id,
+        parent_pledge_no: currentPledge.pledge_no
       }
       
       const newPledge = await createPledge(newPledgeData)
+      
+      // 2. Close the current pledge and link to new pledge
+      await closePledge(id, canceledDate, returnPledgeNo)
+      
+      // 3. Update the old pledge with return_pledge_id
+      await updatePledge(id, {
+        return_pledge_id: newPledge.id,
+        return_pledge_no: returnPledgeNo
+      })
       
       toast.success('Pledge returned and new pledge created!')
       setShowCloseModal(false)
@@ -112,7 +122,7 @@ export default function PledgeDetails() {
       await closePledge(id, canceledDate, null)
       toast.success('Pledge closed successfully')
       setShowJustCloseModal(false)
-      navigate('/past')
+      navigate('/pledge')
     } catch (error) {
       toast.error(error.message || 'Failed to close pledge')
     }
@@ -132,7 +142,7 @@ export default function PledgeDetails() {
     try {
       await createRepledge(id, returnData)
       toast.success(t('messages.repledgeCreated'))
-      navigate('/past')
+      navigate('/pledge')
     } catch (error) {
       toast.error(error.message || t('common.error'))
       throw error
@@ -189,7 +199,7 @@ export default function PledgeDetails() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'ACTIVE': return 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-      case 'CLOSED': return 'bg-blue-50 text-blue-700 border border-blue-200'
+      case 'CLOSED': return 'bg-red-50 text-red-700 border border-red-200'
       case 'REPLEDGED': return 'bg-orange-50 text-orange-700 border border-orange-200'
       default: return 'bg-gray-100 text-gray-600 border border-gray-200'
     }
@@ -198,11 +208,15 @@ export default function PledgeDetails() {
   const getStatusLabel = (status) => {
     switch (status) {
       case 'ACTIVE': return t('pledge.active')
-      case 'CLOSED': return t('pledge.returned')
+      case 'CLOSED': return t('pledge.closed')
       case 'REPLEDGED': return t('pledge.repledged')
       default: return status
     }
   }
+
+  // Check if this pledge is a returned pledge (has parent) or was returned (has return_pledge)
+  const isReturnedPledge = currentPledge?.parent_pledge_id || currentPledge?.parent_pledge_no
+  const wasReturned = currentPledge?.return_pledge_id || currentPledge?.return_pledge_no
 
   const getJewelTypeColor = (jewelType) => {
     switch (jewelType) {
@@ -259,12 +273,26 @@ export default function PledgeDetails() {
               <Download className="w-4 h-4" />
               <span>PDF</span>
             </button>
-            <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
-              currentPledge.status === 'ACTIVE' ? 'bg-emerald-500 text-white' : 
-              currentPledge.status === 'CLOSED' ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'
-            }`}>
-              {getStatusLabel(currentPledge.status)}
-            </span>
+            <div className="flex items-center gap-1">
+              <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
+                currentPledge.status === 'ACTIVE' ? 'bg-emerald-500 text-white' : 
+                currentPledge.status === 'CLOSED' ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'
+              }`}>
+                {getStatusLabel(currentPledge.status)}
+              </span>
+              {/* Show Returned badge for closed pledges that were returned */}
+              {currentPledge.status === 'CLOSED' && wasReturned && (
+                <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-500 text-white">
+                  {t('pledge.returned')}
+                </span>
+              )}
+              {/* Show Returned badge for active pledges that are a return */}
+              {currentPledge.status === 'ACTIVE' && isReturnedPledge && (
+                <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-500 text-white">
+                  {t('pledge.returned')}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -445,7 +473,9 @@ export default function PledgeDetails() {
               {t('ownerRepledge.sectionTitle')}
             </h3>
             <div className="flex items-center gap-2">
-              {currentPledge.status === 'ACTIVE' && (
+              {/* Only show Add button if pledge is active AND no active owner repledge exists */}
+              {currentPledge.status === 'ACTIVE' && 
+               !(currentPledge.ownerRepledges?.some(or => or.status === 'ACTIVE')) && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -470,7 +500,6 @@ export default function PledgeDetails() {
                       <div className="flex justify-between items-start mb-3">
                         <div>
                           <span className="font-bold text-slate-800">{or.financer_name}</span>
-                          {or.financer_place && <span className="text-xs text-slate-500 ml-2">({or.financer_place})</span>}
                         </div>
                         <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${or.status === 'ACTIVE' ? 'bg-blue-500 text-white' : 'bg-slate-400 text-white'}`}>
                           {or.status === 'ACTIVE' ? t('pledge.active') : t('pledge.closed')}
@@ -485,12 +514,6 @@ export default function PledgeDetails() {
                           <span className="text-slate-400 text-xs">{t('ownerRepledge.debtDate')}</span>
                           <p className="font-bold text-slate-800">{formatDate(or.debt_date)}</p>
                         </div>
-                        {or.interest_amount > 0 && (
-                          <div className="bg-orange-50 rounded-lg p-2">
-                            <span className="text-orange-400 text-xs">{t('ownerRepledge.interestAmount')}</span>
-                            <p className="font-bold text-orange-600">{formatCurrency(or.interest_amount)}</p>
-                          </div>
-                        )}
                         {or.release_date && (
                           <div className="bg-white rounded-lg p-2">
                             <span className="text-slate-400 text-xs">{t('ownerRepledge.releaseDate')}</span>
@@ -648,7 +671,19 @@ export default function PledgeDetails() {
       {/* Return Pledge Modal - Creates New Pledge */}
       {showCloseModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-5 max-w-md w-full border border-gray-200">
+          <div className="bg-white rounded-xl p-5 max-w-md w-full border border-gray-200 relative">
+            {/* Close X Button */}
+            <button
+              onClick={() => {
+                setShowCloseModal(false)
+                setReturnPledgeNo('')
+                setReturnAmount('')
+              }}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+            
             <h3 className="text-lg font-bold mb-2 text-gray-900">Return & Create New Pledge</h3>
             <p className="text-gray-600 text-sm mb-4">This will close current pledge and create a new one with the same customer details.</p>
             
@@ -685,8 +720,7 @@ export default function PledgeDetails() {
             {/* Return Date */}
             <div className="mb-4">
               <label className="text-sm font-medium text-gray-700 mb-1 block">Date *</label>
-              <input
-                type="date"
+              <DateInput
                 value={canceledDate}
                 onChange={(e) => setCanceledDate(e.target.value)}
                 className="w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"
@@ -723,15 +757,22 @@ export default function PledgeDetails() {
       {/* Just Close Modal (without creating new pledge) */}
       {showJustCloseModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-5 max-w-sm w-full border border-gray-200">
+          <div className="bg-white rounded-xl p-5 max-w-sm w-full border border-gray-200 relative">
+            {/* Close X Button */}
+            <button
+              onClick={() => setShowJustCloseModal(false)}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+            
             <h3 className="text-lg font-bold mb-2 text-gray-900">Close Pledge</h3>
             <p className="text-gray-600 text-sm mb-4">This will permanently close this pledge without creating a new one.</p>
             
             {/* Close Date */}
             <div className="mb-4">
               <label className="text-sm font-medium text-gray-700 mb-1 block">Close Date *</label>
-              <input
-                type="date"
+              <DateInput
                 value={canceledDate}
                 onChange={(e) => setCanceledDate(e.target.value)}
                 className="w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"

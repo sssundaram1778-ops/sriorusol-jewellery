@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { X, UserPlus } from 'lucide-react'
+import DateInput from './DateInput'
 
 const returnSchema = z.object({
   new_customer_name: z.string().min(1, 'New customer name is required'),
@@ -21,7 +22,9 @@ export default function ReturnModal({ isOpen, onClose, onSubmit, pledge, default
     register,
     handleSubmit,
     formState: { errors },
-    reset
+    reset,
+    watch,
+    setValue
   } = useForm({
     resolver: zodResolver(returnSchema),
     defaultValues: {
@@ -87,9 +90,9 @@ export default function ReturnModal({ isOpen, onClose, onSubmit, pledge, default
             <label className="label">
               <span className="label-text font-medium">{t('pledge.date')} *</span>
             </label>
-            <input
-              type="date"
-              {...register('date')}
+            <DateInput
+              value={watch('date')}
+              onChange={(e) => setValue('date', e.target.value)}
               className="input input-bordered w-full focus:border-blue-600"
             />
             {errors.date && <span className="text-error text-sm mt-1">{errors.date.message}</span>}

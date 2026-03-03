@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { X, CheckCircle, Calendar } from 'lucide-react'
+import DateInput from './DateInput'
 
 const closeSchema = z.object({
   release_date: z.string().min(1, 'Release date is required')
@@ -22,7 +23,9 @@ export default function CloseOwnerRepledgeModal({
     register,
     handleSubmit,
     formState: { errors },
-    reset
+    reset,
+    watch,
+    setValue
   } = useForm({
     resolver: zodResolver(closeSchema),
     defaultValues: {
@@ -106,9 +109,9 @@ export default function CloseOwnerRepledgeModal({
                 {t('ownerRepledge.releaseDate')} *
               </span>
             </label>
-            <input
-              type="date"
-              {...register('release_date')}
+            <DateInput
+              value={watch('release_date')}
+              onChange={(e) => setValue('release_date', e.target.value)}
               className="input input-bordered w-full focus:border-green-500"
             />
             {errors.release_date && <span className="text-error text-sm mt-1">{errors.release_date.message}</span>}

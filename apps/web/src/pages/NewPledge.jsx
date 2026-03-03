@@ -7,6 +7,7 @@ import { z } from 'zod'
 import toast from 'react-hot-toast'
 import { usePledgeStore } from '../store/pledgeStore'
 import { Save, X, ChevronLeft, User, Gem, Wallet } from 'lucide-react'
+import DateInput from '../components/DateInput'
 
 const pledgeSchema = z.object({
   pledge_no: z.string().min(1, 'Pledge number is required'),
@@ -148,9 +149,9 @@ export default function NewPledge() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-semibold text-slate-700 mb-2 block">{t('pledge.date')} <span className="text-red-500">*</span></label>
-                <input
-                  type="date"
-                  {...register('date')}
+                <DateInput
+                  value={watch('date')}
+                  onChange={(e) => setValue('date', e.target.value)}
                   className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all text-sm"
                 />
               </div>

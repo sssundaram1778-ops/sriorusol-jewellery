@@ -5,12 +5,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { X, Landmark, FileText, Search } from 'lucide-react'
 import { getFinancerList } from '../lib/database'
+import DateInput from './DateInput'
 
 const ownerRepledgeSchema = z.object({
   financer_name: z.string().min(1, 'Financer name is required'),
-  financer_place: z.string().optional(),
   amount: z.number().min(1, 'Amount must be greater than 0'),
-  interest_amount: z.number().min(0).optional(),
   debt_date: z.string().min(1, 'Debt date is required'),
   notes: z.string().optional()
 })
@@ -39,9 +38,7 @@ export default function OwnerRepledgeModal({
     resolver: zodResolver(ownerRepledgeSchema),
     defaultValues: {
       financer_name: '',
-      financer_place: '',
       amount: 0,
-      interest_amount: 0,
       debt_date: new Date().toISOString().split('T')[0],
       notes: ''
     }
@@ -52,9 +49,7 @@ export default function OwnerRepledgeModal({
     if (isOpen) {
       reset({
         financer_name: '',
-        financer_place: '',
         amount: 0,
-        interest_amount: 0,
         debt_date: new Date().toISOString().split('T')[0],
         notes: ''
       })
@@ -84,7 +79,6 @@ export default function OwnerRepledgeModal({
 
   const handleFinancerSelect = (financer) => {
     setValue('financer_name', financer.name)
-    setValue('financer_place', financer.place || '')
     setSearchQuery(financer.name)
     setShowSuggestions(false)
   }
@@ -187,19 +181,6 @@ export default function OwnerRepledgeModal({
             )}
           </div>
 
-          {/* Financer Place */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text font-medium">{t('ownerRepledge.financerPlace')}</span>
-            </label>
-            <input
-              type="text"
-              {...register('financer_place')}
-              placeholder={t('ownerRepledge.enterFinancerPlace')}
-              className="input input-bordered w-full focus:border-blue-500"
-            />
-          </div>
-
           {/* Amount */}
           <div className="form-control">
             <label className="label">
@@ -217,30 +198,14 @@ export default function OwnerRepledgeModal({
             {errors.amount && <span className="text-error text-sm mt-1">{errors.amount.message}</span>}
           </div>
 
-          {/* Interest Amount (Optional) */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text font-medium">{t('ownerRepledge.interestAmount')} ({t('common.optional')})</span>
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₹</span>
-              <input
-                type="number"
-                {...register('interest_amount', { valueAsNumber: true })}
-                placeholder="0"
-                className="input input-bordered w-full pl-8 focus:border-blue-500"
-              />
-            </div>
-          </div>
-
           {/* Debt Date */}
           <div className="form-control">
             <label className="label">
               <span className="label-text font-medium">{t('ownerRepledge.debtDate')} *</span>
             </label>
-            <input
-              type="date"
-              {...register('debt_date')}
+            <DateInput
+              value={watch('debt_date')}
+              onChange={(e) => setValue('debt_date', e.target.value)}
               className="input input-bordered w-full focus:border-blue-500"
             />
             {errors.debt_date && <span className="text-error text-sm mt-1">{errors.debt_date.message}</span>}

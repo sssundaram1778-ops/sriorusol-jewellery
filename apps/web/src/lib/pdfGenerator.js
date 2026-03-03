@@ -3,6 +3,16 @@ import autoTable from 'jspdf-autotable'
 import { format } from 'date-fns'
 import { calculatePledgeTotals } from './database'
 
+// Currency formatter for PDF (uses Rs. instead of ₹ for better PDF compatibility)
+const formatCurrencyPDF = (amount) => {
+  const num = parseFloat(amount) || 0
+  return 'Rs. ' + num.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
+
+// Standard currency formatter for display
 const formatCurrency = (amount) => {
     const num = parseFloat(amount) || 0
     return new Intl.NumberFormat('en-IN', {
@@ -17,202 +27,260 @@ const formatDate = (date) => {
   return format(new Date(date), 'dd/MM/yyyy')
 }
 
-// Professional color palette - Blue Theme
+// Professional color palette - Modern Blue Theme
 const COLORS = {
-  primary: [37, 99, 235],         // Blue-600
-  primaryDark: [29, 78, 216],     // Blue-700
-  primaryLight: [96, 165, 250],   // Blue-400
-  navy: [30, 64, 175],            // Blue-800
-  navyLight: [59, 130, 246],      // Blue-500
-  text: [33, 37, 41],             // Dark text
-  textMuted: [100, 116, 139],     // Muted text
-  border: [226, 232, 240],        // Light border
+  primary: [41, 98, 255],         // Vibrant Blue
+  primaryDark: [25, 65, 185],     // Deep Blue
+  primaryLight: [99, 145, 255],   // Light Blue
+  navy: [15, 35, 95],             // Navy Blue
+  navyLight: [45, 85, 165],       // Medium Navy
+  accent: [0, 184, 148],          // Teal accent
+  text: [30, 35, 45],             // Dark text
+  textMuted: [95, 105, 125],      // Muted text
+  textLight: [140, 150, 165],     // Light text
+  border: [220, 228, 240],        // Light border
   success: [16, 185, 129],        // Green
+  warning: [245, 158, 11],        // Orange
+  danger: [239, 68, 68],          // Red
   white: [255, 255, 255],
-  background: [248, 250, 252],    // Slate-50
-  lightBlue: [239, 246, 255]      // Blue-50
+  background: [248, 250, 255],    // Very light blue
+  lightBlue: [240, 245, 255],     // Light blue bg
+  cream: [253, 253, 250]          // Cream bg
 }
 
 export const generatePledgePDF = (pledge, language = 'en') => {
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
-  const margin = 12
+  const margin = 14
   const contentWidth = pageWidth - (margin * 2)
   
-  // ============ COMPACT HEADER ============
+  // ============ ELEGANT HEADER WITH GRADIENT EFFECT ============
+  // Main header background
   doc.setFillColor(...COLORS.navy)
-  doc.rect(0, 0, pageWidth, 28, 'F')
+  doc.rect(0, 0, pageWidth, 32, 'F')
   
-  doc.setFillColor(...COLORS.primaryLight)
-  doc.rect(0, 28, pageWidth, 2, 'F')
+  // Decorative accent line
+  doc.setFillColor(...COLORS.accent)
+  doc.rect(0, 32, pageWidth, 3, 'F')
   
-  // Shop name
+  // Shop name - Elegant typography
   doc.setTextColor(...COLORS.white)
-  doc.setFontSize(18)
+  doc.setFontSize(20)
   doc.setFont(undefined, 'bold')
-  doc.text('Sri Orusol Jeweller', pageWidth / 2, 12, { align: 'center' })
+  doc.text('Sri Orusol Jeweller', margin, 14)
   
   // Tagline
-  doc.setFontSize(8)
-  doc.setFont(undefined, 'normal')
-  doc.text('Trusted Jeweller Finance Services', pageWidth / 2, 19, { align: 'center' })
-  
-  // Receipt badge
-  doc.setFillColor(...COLORS.primary)
-  doc.roundedRect(pageWidth / 2 - 30, 22, 60, 6, 1, 1, 'F')
-  doc.setFontSize(7)
-  doc.setFont(undefined, 'bold')
-  doc.text('PLEDGE RECEIPT', pageWidth / 2, 26, { align: 'center' })
-  
-  doc.setTextColor(...COLORS.text)
-  let yPos = 36
-  
-  // ============ PLEDGE INFO BAR ============
-  doc.setFillColor(...COLORS.lightBlue)
-  doc.roundedRect(margin, yPos, contentWidth, 12, 2, 2, 'F')
-  doc.setDrawColor(...COLORS.primary)
-  doc.setLineWidth(0.3)
-  doc.roundedRect(margin, yPos, contentWidth, 12, 2, 2, 'S')
-  
-  // Left: Pledge Number
   doc.setFontSize(9)
-  doc.setFont(undefined, 'bold')
-  doc.setTextColor(...COLORS.primary)
-  doc.text(`Pledge No: ${pledge.pledge_no}`, margin + 6, yPos + 7)
+  doc.setFont(undefined, 'normal')
+  doc.setTextColor(...COLORS.primaryLight)
+  doc.text('Trusted Gold Finance Services Since 1985', margin + 30, 22)
   
-  // Center: Status Badge
-  const statusColor = pledge.status === 'ACTIVE' ? COLORS.success : COLORS.textMuted
-  doc.setFillColor(...statusColor)
-  doc.roundedRect(pageWidth / 2 - 15, yPos + 2, 30, 8, 1, 1, 'F')
+  // Document type badge - Right side
+  doc.setFillColor(...COLORS.accent)
+  doc.roundedRect(pageWidth - margin - 50, 10, 48, 14, 3, 3, 'F')
   doc.setTextColor(...COLORS.white)
-  doc.setFontSize(7)
-  doc.text(pledge.status || 'ACTIVE', pageWidth / 2, yPos + 7, { align: 'center' })
-  
-  // Right: Date
-  doc.setTextColor(...COLORS.textMuted)
-  doc.setFont(undefined, 'normal')
   doc.setFontSize(9)
-  doc.text(`Date: ${formatDate(pledge.date)}`, pageWidth - margin - 6, yPos + 7, { align: 'right' })
+  doc.setFont(undefined, 'bold')
+  doc.text('PLEDGE RECEIPT', pageWidth - margin - 26, 19, { align: 'center' })
   
-  yPos += 16
+  doc.setTextColor(...COLORS.text)
+  let yPos = 42
   
-  // ============ TWO COLUMN LAYOUT: CUSTOMER & JEWELS ============
-  const colWidth = (contentWidth - 6) / 2
+  // ============ PLEDGE INFO STRIP ============
+  doc.setFillColor(...COLORS.lightBlue)
+  doc.roundedRect(margin, yPos, contentWidth, 16, 3, 3, 'F')
+  doc.setDrawColor(...COLORS.primary)
+  doc.setLineWidth(0.5)
+  doc.roundedRect(margin, yPos, contentWidth, 16, 3, 3, 'S')
+  
+  // Pledge Number
+  doc.setTextColor(...COLORS.primaryDark)
+  doc.setFontSize(12)
+  doc.setFont(undefined, 'bold')
+  doc.text(`#${pledge.pledge_no}`, margin + 10, yPos + 10)
+  
+  // Status Badge - Center
+  const statusColor = pledge.status === 'ACTIVE' ? COLORS.success : 
+                      pledge.status === 'CLOSED' ? COLORS.danger : COLORS.warning
+  doc.setFillColor(...statusColor)
+  doc.roundedRect(pageWidth / 2 - 18, yPos + 3, 36, 10, 2, 2, 'F')
+  doc.setTextColor(...COLORS.white)
+  doc.setFontSize(8)
+  doc.setFont(undefined, 'bold')
+  doc.text(pledge.status || 'ACTIVE', pageWidth / 2, yPos + 10, { align: 'center' })
+  
+  // Date - Right side
+  doc.setTextColor(...COLORS.textMuted)
+  doc.setFontSize(9)
+  doc.setFont(undefined, 'normal')
+  doc.text('Date:', pageWidth - margin - 50, yPos + 7)
+  doc.setTextColor(...COLORS.text)
+  doc.setFont(undefined, 'bold')
+  doc.text(formatDate(pledge.date), pageWidth - margin - 50, yPos + 13)
+  
+  yPos += 22
+  
+  // ============ TWO COLUMN LAYOUT ============
+  const colWidth = (contentWidth - 8) / 2
   const leftColX = margin
-  const rightColX = margin + colWidth + 6
+  const rightColX = margin + colWidth + 8
   
-  // Customer Details - Left Column
+  // Customer Details Card
+  doc.setFillColor(...COLORS.cream)
+  doc.roundedRect(leftColX, yPos, colWidth, 50, 3, 3, 'F')
+  doc.setDrawColor(...COLORS.border)
+  doc.setLineWidth(0.3)
+  doc.roundedRect(leftColX, yPos, colWidth, 50, 3, 3, 'S')
+  
+  // Section header with accent bar
   doc.setFillColor(...COLORS.primary)
-  doc.roundedRect(leftColX, yPos, 3, 10, 1, 1, 'F')
-  doc.setTextColor(...COLORS.text)
-  doc.setFontSize(10)
+  doc.roundedRect(leftColX, yPos, colWidth, 10, 3, 3, 'F')
+  doc.rect(leftColX, yPos + 5, colWidth, 5, 'F')
+  doc.setTextColor(...COLORS.white)
+  doc.setFontSize(9)
   doc.setFont(undefined, 'bold')
-  doc.text('Customer Details', leftColX + 6, yPos + 7)
+  doc.text('CUSTOMER DETAILS', leftColX + 8, yPos + 7)
   
-  // Jewels Details - Right Column
-  doc.setFillColor(...COLORS.primary)
-  doc.roundedRect(rightColX, yPos, 3, 10, 1, 1, 'F')
-  doc.setTextColor(...COLORS.text)
-  doc.text('Jewels Details', rightColX + 6, yPos + 7)
-  
-  yPos += 12
-  
-  // Customer info - compact
-  const customerY = yPos
+  // Customer info with better spacing
+  const custY = yPos + 16
   doc.setFontSize(8)
-  doc.setTextColor(...COLORS.textMuted)
-  doc.setFont(undefined, 'normal')
-  doc.text('Name:', leftColX + 2, customerY + 5)
-  doc.text('Phone:', leftColX + 2, customerY + 12)
-  doc.text('Place:', leftColX + 2, customerY + 19)
   
-  doc.setTextColor(...COLORS.text)
-  doc.setFont(undefined, 'bold')
-  doc.text(pledge.customer_name || '-', leftColX + 22, customerY + 5)
-  doc.text(pledge.phone_number || '-', leftColX + 22, customerY + 12)
-  doc.text(pledge.place || '-', leftColX + 22, customerY + 19)
+  const customerFields = [
+    { label: 'Name', value: pledge.customer_name || '-' },
+    { label: 'Phone', value: pledge.phone_number || '-' },
+    { label: 'Place', value: pledge.place || '-' }
+  ]
   
-  // Jewels info - compact
-  doc.setTextColor(...COLORS.textMuted)
-  doc.setFont(undefined, 'normal')
-  doc.text('Type:', rightColX + 2, customerY + 5)
-  doc.text('Items:', rightColX + 2, customerY + 12)
-  doc.text('Gross:', rightColX + 2, customerY + 19)
-  doc.text('Net:', rightColX + 2, customerY + 26)
-  doc.text('Rate:', rightColX + 2, customerY + 33)
-  
-  doc.setTextColor(...COLORS.text)
-  doc.setFont(undefined, 'bold')
-  doc.text(pledge.jewel_type || 'GOLD', rightColX + 22, customerY + 5)
-  doc.text(String(pledge.no_of_items || 1), rightColX + 22, customerY + 12)
-  doc.text(`${pledge.gross_weight || 0}g`, rightColX + 22, customerY + 19)
-  doc.text(`${pledge.net_weight || 0}g`, rightColX + 22, customerY + 26)
-  doc.text(`${pledge.interest_rate || 2}% / month`, rightColX + 22, customerY + 33)
-  
-  // Jewels description - full width below
-  yPos += 38
-  doc.setTextColor(...COLORS.textMuted)
-  doc.setFont(undefined, 'normal')
-  doc.setFontSize(8)
-  doc.text('Description:', leftColX + 2, yPos)
-  doc.setTextColor(...COLORS.text)
-  doc.setFont(undefined, 'bold')
-  const description = pledge.jewels_details || '-'
-  const splitDesc = doc.splitTextToSize(description, contentWidth - 30)
-  doc.text(splitDesc, leftColX + 30, yPos)
-  yPos += Math.max(splitDesc.length * 4, 4) + 6
-  
-  // ============ AMOUNT DETAILS TABLE ============
-  if (pledge.amounts && pledge.amounts.length > 0) {
-    doc.setFillColor(...COLORS.primary)
-    doc.roundedRect(margin, yPos, 3, 10, 1, 1, 'F')
+  customerFields.forEach((field, i) => {
+    const fieldY = custY + (i * 10)
+    doc.setTextColor(...COLORS.textMuted)
+    doc.setFont(undefined, 'normal')
+    doc.text(field.label + ':', leftColX + 6, fieldY)
     doc.setTextColor(...COLORS.text)
+    doc.setFont(undefined, 'bold')
+    doc.text(field.value, leftColX + 28, fieldY)
+  })
+  
+  // Jewels Details Card
+  doc.setFillColor(...COLORS.cream)
+  doc.roundedRect(rightColX, yPos, colWidth, 50, 3, 3, 'F')
+  doc.setDrawColor(...COLORS.border)
+  doc.roundedRect(rightColX, yPos, colWidth, 50, 3, 3, 'S')
+  
+  // Section header
+  doc.setFillColor(...COLORS.accent)
+  doc.roundedRect(rightColX, yPos, colWidth, 10, 3, 3, 'F')
+  doc.rect(rightColX, yPos + 5, colWidth, 5, 'F')
+  doc.setTextColor(...COLORS.white)
+  doc.setFontSize(9)
+  doc.setFont(undefined, 'bold')
+  doc.text('JEWELLERY DETAILS', rightColX + 8, yPos + 7)
+  
+  // Jewels info
+  const jewelY = yPos + 16
+  const jewelFields = [
+    { label: 'Type', value: pledge.jewel_type || 'GOLD' },
+    { label: 'Items', value: String(pledge.no_of_items || 1) },
+    { label: 'Gross Wt', value: `${pledge.gross_weight || 0}g` },
+    { label: 'Net Wt', value: `${pledge.net_weight || 0}g` }
+  ]
+  
+  jewelFields.forEach((field, i) => {
+    const row = Math.floor(i / 2)
+    const col = i % 2
+    const fieldY = jewelY + (row * 10)
+    const fieldX = rightColX + 6 + (col * 45)
+    
+    doc.setTextColor(...COLORS.textMuted)
+    doc.setFont(undefined, 'normal')
+    doc.text(field.label + ':', fieldX, fieldY)
+    doc.setTextColor(...COLORS.text)
+    doc.setFont(undefined, 'bold')
+    doc.text(field.value, fieldX + 22, fieldY)
+  })
+  
+  // Interest Rate Badge
+  doc.setFillColor(...COLORS.warning)
+  doc.roundedRect(rightColX + colWidth - 35, yPos + 38, 30, 9, 2, 2, 'F')
+  doc.setTextColor(...COLORS.white)
+  doc.setFontSize(8)
+  doc.setFont(undefined, 'bold')
+  doc.text(`${pledge.interest_rate || 2}% p.m.`, rightColX + colWidth - 20, yPos + 44, { align: 'center' })
+  
+  yPos += 54
+  
+  // Jewels description - Full width
+  if (pledge.jewels_details) {
+    doc.setFillColor(...COLORS.lightBlue)
+    doc.roundedRect(margin, yPos, contentWidth, 14, 2, 2, 'F')
+    doc.setTextColor(...COLORS.textMuted)
+    doc.setFontSize(8)
+    doc.setFont(undefined, 'normal')
+    doc.text('Description:', margin + 6, yPos + 9)
+    doc.setTextColor(...COLORS.text)
+    doc.setFont(undefined, 'bold')
+    const description = pledge.jewels_details || '-'
+    const splitDesc = doc.splitTextToSize(description, contentWidth - 40)
+    doc.text(splitDesc[0], margin + 35, yPos + 9)
+    yPos += 18
+  } else {
+    yPos += 4
+  }
+  
+  // ============ LOAN DETAILS TABLE ============
+  if (pledge.amounts && pledge.amounts.length > 0) {
+    // Section header
+    doc.setFillColor(...COLORS.navy)
+    doc.roundedRect(margin, yPos, contentWidth, 10, 2, 2, 'F')
+    doc.setTextColor(...COLORS.white)
     doc.setFontSize(10)
     doc.setFont(undefined, 'bold')
-    doc.text('Loan Details', margin + 6, yPos + 7)
-    yPos += 12
+    doc.text('LOAN DETAILS', margin + 8, yPos + 7)
+    yPos += 14
     
     const totals = calculatePledgeTotals(pledge.amounts)
     
-    const amountHeaders = [['Date', 'Type', 'Principal', 'Rate', 'Days', 'Interest', 'Total']]
+    const amountHeaders = [['Date', 'Type', 'Principal', 'Rate', 'Months', 'Interest', 'Total']]
     const amountRows = totals.breakdown.map(amt => [
       formatDate(amt.date),
-      amt.amount_type,
-      formatCurrency(amt.amount),
+      amt.amount_type === 'INITIAL' ? 'Initial' : 'Additional',
+      formatCurrencyPDF(amt.amount),
       `${amt.interest_rate}%`,
-      String(amt.days),
-      formatCurrency(amt.interest),
-      formatCurrency(amt.total)
+      amt.months.toFixed(1),
+      formatCurrencyPDF(amt.interest),
+      formatCurrencyPDF(amt.total)
     ])
     
     autoTable(doc, {
       startY: yPos,
       head: amountHeaders,
       body: amountRows,
-      theme: 'striped',
+      theme: 'plain',
       headStyles: { 
         fillColor: COLORS.primary,
         textColor: COLORS.white,
         fontStyle: 'bold',
-        fontSize: 7,
+        fontSize: 8,
         halign: 'center',
-        cellPadding: 2
+        cellPadding: 4
       },
       bodyStyles: {
-        fontSize: 7,
-        cellPadding: 2,
+        fontSize: 8,
+        cellPadding: 4,
         halign: 'center',
-        textColor: COLORS.text
+        textColor: COLORS.text,
+        lineColor: COLORS.border,
+        lineWidth: 0.2
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 22 },
-        1: { halign: 'center', cellWidth: 22 },
-        2: { halign: 'right', cellWidth: 28 },
-        3: { halign: 'center', cellWidth: 14 },
-        4: { halign: 'center', cellWidth: 14 },
-        5: { halign: 'right', cellWidth: 28 },
-        6: { halign: 'right', cellWidth: 30, fontStyle: 'bold' }
+        0: { halign: 'center', cellWidth: 24 },
+        1: { halign: 'center', cellWidth: 24 },
+        2: { halign: 'right', cellWidth: 30 },
+        3: { halign: 'center', cellWidth: 16 },
+        4: { halign: 'center', cellWidth: 18 },
+        5: { halign: 'right', cellWidth: 28, textColor: COLORS.success },
+        6: { halign: 'right', cellWidth: 32, fontStyle: 'bold', textColor: COLORS.primaryDark }
       },
       alternateRowStyles: {
         fillColor: COLORS.lightBlue
@@ -220,112 +288,130 @@ export const generatePledgePDF = (pledge, language = 'en') => {
       margin: { left: margin, right: margin }
     })
     
-    yPos = doc.lastAutoTable.finalY + 6
+    yPos = doc.lastAutoTable.finalY + 8
     
-    // ============ COMPACT TOTALS - INLINE ============
-    doc.setFillColor(...COLORS.lightBlue)
-    doc.roundedRect(margin, yPos, contentWidth, 18, 2, 2, 'F')
-    doc.setDrawColor(...COLORS.primary)
-    doc.setLineWidth(0.4)
-    doc.roundedRect(margin, yPos, contentWidth, 18, 2, 2, 'S')
+    // ============ ELEGANT TOTALS SUMMARY ============
+    doc.setFillColor(...COLORS.navy)
+    doc.roundedRect(margin, yPos, contentWidth, 28, 3, 3, 'F')
     
     const totalColWidth = contentWidth / 3
     
+    // Divider lines
+    doc.setDrawColor(...COLORS.navyLight)
+    doc.setLineWidth(0.5)
+    doc.line(margin + totalColWidth, yPos + 4, margin + totalColWidth, yPos + 24)
+    doc.line(margin + totalColWidth * 2, yPos + 4, margin + totalColWidth * 2, yPos + 24)
+    
     // Principal
-    doc.setFontSize(7)
-    doc.setTextColor(...COLORS.textMuted)
+    doc.setFontSize(8)
+    doc.setTextColor(...COLORS.primaryLight)
     doc.setFont(undefined, 'normal')
-    doc.text('Total Principal', margin + totalColWidth / 2, yPos + 5, { align: 'center' })
-    doc.setFontSize(9)
-    doc.setTextColor(...COLORS.text)
+    doc.text('PRINCIPAL', margin + totalColWidth / 2, yPos + 9, { align: 'center' })
+    doc.setFontSize(12)
+    doc.setTextColor(...COLORS.white)
     doc.setFont(undefined, 'bold')
-    doc.text(formatCurrency(totals.totalPrincipal), margin + totalColWidth / 2, yPos + 13, { align: 'center' })
+    doc.text(formatCurrencyPDF(totals.totalPrincipal), margin + totalColWidth / 2, yPos + 20, { align: 'center' })
     
     // Interest
-    doc.setFontSize(7)
-    doc.setTextColor(...COLORS.textMuted)
+    doc.setFontSize(8)
+    doc.setTextColor(...COLORS.primaryLight)
     doc.setFont(undefined, 'normal')
-    doc.text('Total Interest', margin + totalColWidth * 1.5, yPos + 5, { align: 'center' })
-    doc.setFontSize(9)
-    doc.setTextColor(...COLORS.success)
+    doc.text('INTEREST', margin + totalColWidth * 1.5, yPos + 9, { align: 'center' })
+    doc.setFontSize(12)
+    doc.setTextColor(...COLORS.accent)
     doc.setFont(undefined, 'bold')
-    doc.text(`+${formatCurrency(totals.totalInterest)}`, margin + totalColWidth * 1.5, yPos + 13, { align: 'center' })
+    doc.text(`+${formatCurrencyPDF(totals.totalInterest)}`, margin + totalColWidth * 1.5, yPos + 20, { align: 'center' })
     
-    // Grand Total
-    doc.setFontSize(7)
-    doc.setTextColor(...COLORS.textMuted)
+    // Grand Total - Highlighted
+    doc.setFillColor(...COLORS.accent)
+    doc.roundedRect(margin + totalColWidth * 2 + 5, yPos + 2, totalColWidth - 10, 24, 2, 2, 'F')
+    doc.setFontSize(8)
+    doc.setTextColor(...COLORS.white)
     doc.setFont(undefined, 'normal')
-    doc.text('Grand Total', margin + totalColWidth * 2.5, yPos + 5, { align: 'center' })
-    doc.setFontSize(11)
-    doc.setTextColor(...COLORS.primaryDark)
+    doc.text('TOTAL PAYABLE', margin + totalColWidth * 2.5, yPos + 9, { align: 'center' })
+    doc.setFontSize(14)
     doc.setFont(undefined, 'bold')
-    doc.text(formatCurrency(totals.grandTotal), margin + totalColWidth * 2.5, yPos + 13, { align: 'center' })
+    doc.text(formatCurrencyPDF(totals.grandTotal), margin + totalColWidth * 2.5, yPos + 21, { align: 'center' })
     
-    yPos += 22
+    yPos += 34
   }
   
-  // ============ REPLEDGE HISTORY (Compact) ============
-  if (pledge.repledges && pledge.repledges.length > 0) {
-    doc.setFillColor(...COLORS.primary)
-    doc.roundedRect(margin, yPos, 3, 10, 1, 1, 'F')
-    doc.setTextColor(...COLORS.text)
+  // ============ OWNER REPLEDGE SECTION ============
+  if (pledge.ownerRepledges && pledge.ownerRepledges.length > 0) {
+    doc.setFillColor(...COLORS.navyLight)
+    doc.roundedRect(margin, yPos, contentWidth, 10, 2, 2, 'F')
+    doc.setTextColor(...COLORS.white)
     doc.setFontSize(10)
     doc.setFont(undefined, 'bold')
-    doc.text('Transfer History', margin + 6, yPos + 7)
-    yPos += 12
+    doc.text('FINANCER DETAILS', margin + 8, yPos + 7)
+    yPos += 14
     
-    const repledgeHeaders = [['Date', 'New Customer', 'Amount', 'Rate', 'Status']]
-    const repledgeRows = pledge.repledges.map(r => [
-      formatDate(r.date),
-      r.new_customer_name,
-      formatCurrency(r.amount),
-      `${r.interest_rate}%`,
-      r.status
+    const repledgeHeaders = [['Financer', 'Amount', 'Debt Date', 'Release', 'Status']]
+    const repledgeRows = pledge.ownerRepledges.map(r => [
+      r.financer_name || '-',
+      formatCurrencyPDF(r.amount || 0),
+      formatDate(r.debt_date),
+      r.release_date ? formatDate(r.release_date) : '-',
+      r.status || '-'
     ])
     
     autoTable(doc, {
       startY: yPos,
       head: repledgeHeaders,
       body: repledgeRows,
-      theme: 'striped',
+      theme: 'plain',
       headStyles: { 
         fillColor: COLORS.navyLight,
         textColor: COLORS.white,
         fontStyle: 'bold',
-        fontSize: 7,
+        fontSize: 8,
         halign: 'center',
-        cellPadding: 2
+        cellPadding: 3
       },
       bodyStyles: {
-        fontSize: 7,
-        cellPadding: 2,
+        fontSize: 8,
+        cellPadding: 3,
         halign: 'center',
         textColor: COLORS.text
       },
       alternateRowStyles: {
         fillColor: COLORS.lightBlue
       },
-      margin: { left: margin, right: margin }
+      margin: { left: margin, right: margin },
+      didParseCell: (data) => {
+        if (data.column.index === 4 && data.section === 'body') {
+          if (data.cell.text[0] === 'ACTIVE') {
+            data.cell.styles.textColor = COLORS.success
+            data.cell.styles.fontStyle = 'bold'
+          } else if (data.cell.text[0] === 'CLOSED') {
+            data.cell.styles.textColor = COLORS.danger
+          }
+        }
+      }
     })
     
     yPos = doc.lastAutoTable.finalY + 6
   }
   
-  // ============ COMPACT FOOTER ============
-  const footerY = pageHeight - 18
+  // ============ ELEGANT FOOTER ============
+  const footerY = pageHeight - 20
   
-  doc.setDrawColor(...COLORS.primary)
-  doc.setLineWidth(0.5)
-  doc.line(margin, footerY - 4, pageWidth - margin, footerY - 4)
+  // Footer line with gradient effect
+  doc.setDrawColor(...COLORS.accent)
+  doc.setLineWidth(1)
+  doc.line(margin, footerY - 6, pageWidth - margin, footerY - 6)
   
-  doc.setFontSize(8)
-  doc.setTextColor(...COLORS.textMuted)
+  // Thank you message
+  doc.setFontSize(9)
+  doc.setTextColor(...COLORS.text)
   doc.setFont(undefined, 'italic')
-  doc.text('Thank you for your trust in Sri Orusol Jeweller!', pageWidth / 2, footerY + 2, { align: 'center' })
+  doc.text('Thank you for choosing Sri Orusol Jeweller!', pageWidth / 2, footerY + 1, { align: 'center' })
   
-  doc.setFontSize(6)
+  // Contact & timestamp
+  doc.setFontSize(7)
+  doc.setTextColor(...COLORS.textMuted)
   doc.setFont(undefined, 'normal')
-  doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}  |  © Sri Orusol Jeweller`, pageWidth / 2, footerY + 9, { align: 'center' })
+  doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}  |  Contact: +91-XXXXXXXXXX  |  © Sri Orusol Jeweller`, pageWidth / 2, footerY + 9, { align: 'center' })
   
   return doc
 }
@@ -341,84 +427,105 @@ export const printPledgePDF = (pledge, language = 'en') => {
   window.open(doc.output('bloburl'), '_blank')
 }
 
-// Export financer data to PDF - Professional Blue Theme Layout
+// Export financer data to PDF - Professional Modern Layout
 export const downloadFinancerPDF = (financerName, financerPlace, pledges) => {
   const doc = new jsPDF('l') // Landscape
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
   const margin = 15
   
-  // ============ HEADER ============
+  // ============ ELEGANT HEADER ============
+  // Navy header with accent
   doc.setFillColor(...COLORS.navy)
-  doc.rect(0, 0, pageWidth, 35, 'F')
+  doc.rect(0, 0, pageWidth, 38, 'F')
   
-  doc.setFillColor(...COLORS.primaryLight)
-  doc.rect(0, 35, pageWidth, 2, 'F')
+  // Accent bar
+  doc.setFillColor(...COLORS.accent)
+  doc.rect(0, 38, pageWidth, 3, 'F')
   
+  // Logo circle
+  // Company name
   doc.setTextColor(...COLORS.white)
-  doc.setFontSize(20)
+  doc.setFontSize(22)
   doc.setFont(undefined, 'bold')
-  doc.text('Sri Orusol Jeweller', pageWidth / 2, 14, { align: 'center' })
+  doc.text('Sri Orusol Jeweller', margin, 16)
   
+  // Report subtitle
   doc.setFontSize(11)
   doc.setFont(undefined, 'normal')
-  doc.text('Financer Pledges Report', pageWidth / 2, 24, { align: 'center' })
+  doc.setTextColor(...COLORS.primaryLight)
+  doc.text('Financer Pledges Report', margin, 26)
   
-  // Financer name badge
-  doc.setFillColor(...COLORS.primary)
-  const financerText = `${financerName}${financerPlace ? ` • ${financerPlace}` : ''}`
-  const textWidth = doc.getTextWidth(financerText) + 20
-  doc.roundedRect((pageWidth - textWidth) / 2, 27, textWidth, 7, 2, 2, 'F')
-  doc.setFontSize(8)
+  // Financer name badge - Right side
+  doc.setFillColor(...COLORS.accent)
+  const financerText = financerName
+  const textWidth = Math.min(doc.getTextWidth(financerText) * 1.2 + 24, 100)
+  doc.roundedRect(pageWidth - margin - textWidth, 10, textWidth, 18, 4, 4, 'F')
+  doc.setTextColor(...COLORS.white)
+  doc.setFontSize(12)
   doc.setFont(undefined, 'bold')
-  doc.text(financerText, pageWidth / 2, 31.5, { align: 'center' })
+  doc.text(financerText, pageWidth - margin - textWidth / 2, 21, { align: 'center' })
+  
+  if (financerPlace) {
+    doc.setFontSize(8)
+    doc.setFont(undefined, 'normal')
+    doc.text(financerPlace, pageWidth - margin - textWidth / 2, 25, { align: 'center' })
+  }
   
   doc.setTextColor(...COLORS.text)
   
-  let yPos = 46
+  let yPos = 48
   
-  // ============ SUMMARY STATS ============
-  const totalAmount = pledges.reduce((sum, p) => sum + (p.amount || 0), 0)
-  const totalInterest = pledges.reduce((sum, p) => sum + (p.interest_amount || 0), 0)
+  // ============ SUMMARY CARDS ============
+  const totalAmount = pledges.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+  const totalInterest = pledges.reduce((sum, p) => sum + (parseFloat(p.interest_amount) || 0), 0)
   const activeCount = pledges.filter(p => p.status === 'ACTIVE').length
   const closedCount = pledges.length - activeCount
+  const activeAmount = pledges.filter(p => p.status === 'ACTIVE').reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
   
   // Summary boxes
-  const boxWidth = 60
-  const boxGap = 10
-  const totalBoxesWidth = (boxWidth * 4) + (boxGap * 3)
+  const boxWidth = 55
+  const boxGap = 8
+  const totalBoxesWidth = (boxWidth * 5) + (boxGap * 4)
   const startX = (pageWidth - totalBoxesWidth) / 2
   
   const summaryData = [
-    { label: 'Total Pledges', value: pledges.length, color: COLORS.primary },
-    { label: 'Active', value: activeCount, color: COLORS.success },
-    { label: 'Total Amount', value: formatCurrency(totalAmount), color: COLORS.primaryDark },
-    { label: 'Total Interest', value: formatCurrency(totalInterest), color: COLORS.success }
+    { label: 'Total Pledges', value: pledges.length, color: COLORS.primary, bgColor: COLORS.lightBlue },
+    { label: 'Active', value: activeCount, color: COLORS.success, bgColor: [240, 253, 244] },
+    { label: 'Closed', value: closedCount, color: COLORS.danger, bgColor: [254, 242, 242] },
+    { label: 'Active Amount', value: formatCurrencyPDF(activeAmount), color: COLORS.primaryDark, bgColor: COLORS.lightBlue },
+    { label: 'Total Amount', value: formatCurrencyPDF(totalAmount), color: COLORS.accent, bgColor: [240, 253, 250] }
   ]
   
   summaryData.forEach((item, i) => {
     const x = startX + (i * (boxWidth + boxGap))
-    doc.setFillColor(...COLORS.lightBlue)
-    doc.roundedRect(x, yPos, boxWidth, 16, 3, 3, 'F')
-    doc.setDrawColor(...COLORS.primary)
-    doc.setLineWidth(0.4)
-    doc.roundedRect(x, yPos, boxWidth, 16, 3, 3, 'S')
     
+    // Card background
+    doc.setFillColor(...item.bgColor)
+    doc.roundedRect(x, yPos, boxWidth, 20, 3, 3, 'F')
+    
+    // Top accent bar
+    doc.setFillColor(...item.color)
+    doc.roundedRect(x, yPos, boxWidth, 4, 3, 3, 'F')
+    doc.rect(x, yPos + 2, boxWidth, 2, 'F')
+    
+    // Label
     doc.setFontSize(7)
     doc.setTextColor(...COLORS.textMuted)
     doc.setFont(undefined, 'normal')
-    doc.text(item.label, x + boxWidth / 2, yPos + 5, { align: 'center' })
+    doc.text(item.label, x + boxWidth / 2, yPos + 10, { align: 'center' })
     
-    doc.setFontSize(10)
+    // Value
+    doc.setFontSize(11)
     doc.setTextColor(...item.color)
     doc.setFont(undefined, 'bold')
-    doc.text(String(item.value), x + boxWidth / 2, yPos + 12, { align: 'center' })
+    doc.text(String(item.value), x + boxWidth / 2, yPos + 17, { align: 'center' })
   })
   
-  yPos += 24
+  yPos += 28
   
   // ============ DATA TABLE ============
-  const headers = [['#', 'Pledge No', 'Date', 'Customer', 'Jewel Details', 'Gross', 'Net', 'Amount', 'Interest', 'Debt Date', 'Status']]
+  const headers = [['#', 'Pledge No', 'Date', 'Customer', 'Jewel Details', 'Gross', 'Net', 'Amount', 'Debt Date', 'Status']]
   const rows = pledges.map((p, idx) => [
     String(idx + 1),
     p.pledge_no || '-',
@@ -427,8 +534,7 @@ export const downloadFinancerPDF = (financerName, financerPlace, pledges) => {
     (p.jewels_details || '-').substring(0, 28) + ((p.jewels_details?.length || 0) > 28 ? '...' : ''),
     p.gross_weight ? `${p.gross_weight}g` : '-',
     p.net_weight ? `${p.net_weight}g` : '-',
-    formatCurrency(p.amount || 0),
-    formatCurrency(p.interest_amount || 0),
+    formatCurrencyPDF(p.amount || 0),
     p.debt_date ? formatDate(p.debt_date) : '-',
     p.status || '-'
   ])
@@ -437,129 +543,159 @@ export const downloadFinancerPDF = (financerName, financerPlace, pledges) => {
     startY: yPos,
     head: headers,
     body: rows,
-    theme: 'grid',
+    theme: 'plain',
     headStyles: { 
-      fillColor: COLORS.primary,
+      fillColor: COLORS.navy,
       textColor: COLORS.white,
       fontStyle: 'bold',
       fontSize: 8,
       halign: 'center',
-      cellPadding: 4
+      cellPadding: 5
     },
     bodyStyles: { 
-      fontSize: 7.5,
-      cellPadding: 3,
+      fontSize: 8,
+      cellPadding: 4,
       textColor: COLORS.text,
       halign: 'center',
-      valign: 'middle'
+      valign: 'middle',
+      lineColor: COLORS.border,
+      lineWidth: 0.2
     },
     alternateRowStyles: {
       fillColor: COLORS.lightBlue
     },
     columnStyles: {
-      0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 22, halign: 'center', fontStyle: 'bold', textColor: COLORS.primary },
-      2: { cellWidth: 22, halign: 'center' },
-      3: { cellWidth: 34, halign: 'left' },
-      4: { cellWidth: 45, halign: 'left' },
+      0: { cellWidth: 12, halign: 'center', textColor: COLORS.textMuted },
+      1: { cellWidth: 26, halign: 'center', fontStyle: 'bold', textColor: COLORS.primary },
+      2: { cellWidth: 24, halign: 'center' },
+      3: { cellWidth: 36, halign: 'left' },
+      4: { cellWidth: 50, halign: 'left' },
       5: { cellWidth: 18, halign: 'right' },
       6: { cellWidth: 18, halign: 'right' },
-      7: { cellWidth: 26, halign: 'right', fontStyle: 'bold' },
-      8: { cellWidth: 24, halign: 'right', textColor: COLORS.success },
-      9: { cellWidth: 22, halign: 'center' },
-      10: { cellWidth: 18, halign: 'center' }
+      7: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },
+      8: { cellWidth: 24, halign: 'center' },
+      9: { cellWidth: 20, halign: 'center' }
     },
     margin: { left: margin, right: margin },
     didParseCell: (data) => {
-      if (data.column.index === 10 && data.section === 'body') {
+      if (data.column.index === 9 && data.section === 'body') {
         if (data.cell.text[0] === 'ACTIVE') {
           data.cell.styles.textColor = COLORS.success
           data.cell.styles.fontStyle = 'bold'
+        } else if (data.cell.text[0] === 'CLOSED') {
+          data.cell.styles.textColor = COLORS.danger
         }
       }
     }
   })
   
-  // ============ FOOTER ============
-  const footerY = pageHeight - 10
-  doc.setDrawColor(...COLORS.primary)
-  doc.setLineWidth(0.5)
+  // ============ ELEGANT FOOTER ============
+  const footerY = pageHeight - 12
+  
+  // Footer accent line
+  doc.setDrawColor(...COLORS.accent)
+  doc.setLineWidth(0.8)
   doc.line(margin, footerY - 6, pageWidth - margin, footerY - 6)
   
+  // Footer text
   doc.setFontSize(8)
   doc.setTextColor(...COLORS.textMuted)
-  doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}  •  Sri Orusol Jeweller`, pageWidth / 2, footerY, { align: 'center' })
+  doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}`, margin, footerY)
+  doc.text('Sri Orusol Jeweller - Trusted Gold Finance Services', pageWidth / 2, footerY, { align: 'center' })
+  doc.text(`Page 1 of 1`, pageWidth - margin, footerY, { align: 'right' })
   
   doc.save(`${financerName.replace(/[^a-zA-Z0-9]/g, '_')}_Report.pdf`)
 }
 
-// Export all pledges to PDF - Professional Blue Theme Layout
+// Export all pledges to PDF - Professional Modern Layout (matching Financer PDF style)
 export const downloadAllPledgesPDF = (pledges, reportTitle = 'All Pledges') => {
   const doc = new jsPDF('l') // Landscape
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
-  const margin = 12
+  const margin = 15
   
-  // ============ HEADER ============
+  // ============ ELEGANT HEADER ============
+  // Navy header with accent
   doc.setFillColor(...COLORS.navy)
-  doc.rect(0, 0, pageWidth, 30, 'F')
+  doc.rect(0, 0, pageWidth, 38, 'F')
   
-  doc.setFillColor(...COLORS.primaryLight)
-  doc.rect(0, 30, pageWidth, 2, 'F')
+  // Accent bar
+  doc.setFillColor(...COLORS.accent)
+  doc.rect(0, 38, pageWidth, 3, 'F')
   
+  // Company name
   doc.setTextColor(...COLORS.white)
-  doc.setFontSize(18)
+  doc.setFontSize(22)
   doc.setFont(undefined, 'bold')
-  doc.text('Sri Orusol Jeweller', pageWidth / 2, 12, { align: 'center' })
+  doc.text('Sri Orusol Jeweller', margin, 16)
   
-  doc.setFontSize(10)
+  // Report subtitle
+  doc.setFontSize(11)
   doc.setFont(undefined, 'normal')
-  doc.text(`${reportTitle} Report`, pageWidth / 2, 20, { align: 'center' })
+  doc.setTextColor(...COLORS.primaryLight)
+  doc.text(`${reportTitle} Report`, margin, 26)
   
-  doc.setFontSize(7)
-  doc.text(format(new Date(), 'dd MMMM yyyy'), pageWidth / 2, 27, { align: 'center' })
+  // Date badge - Right side
+  doc.setFillColor(...COLORS.accent)
+  const dateText = format(new Date(), 'dd MMM yyyy')
+  const dateWidth = 70
+  doc.roundedRect(pageWidth - margin - dateWidth, 12, dateWidth, 16, 4, 4, 'F')
+  doc.setTextColor(...COLORS.white)
+  doc.setFontSize(10)
+  doc.setFont(undefined, 'bold')
+  doc.text(dateText, pageWidth - margin - dateWidth / 2, 22, { align: 'center' })
   
   doc.setTextColor(...COLORS.text)
   
-  let yPos = 40
+  let yPos = 48
   
-  // ============ SUMMARY STATS ============
-  const totalPrincipal = pledges.reduce((sum, p) => sum + (p.totalPrincipal || 0), 0)
-  const totalInterest = pledges.reduce((sum, p) => sum + (p.totalInterest || 0), 0)
-  const grandTotal = pledges.reduce((sum, p) => sum + (p.grandTotal || 0), 0)
+  // ============ SUMMARY CARDS ============
+  const totalPrincipal = pledges.reduce((sum, p) => sum + (parseFloat(p.totalPrincipal) || 0), 0)
+  const totalInterest = pledges.reduce((sum, p) => sum + (parseFloat(p.totalInterest) || 0), 0)
+  const grandTotal = pledges.reduce((sum, p) => sum + (parseFloat(p.grandTotal) || 0), 0)
   const activeCount = pledges.filter(p => p.status === 'ACTIVE').length
   const closedCount = pledges.length - activeCount
   
-  // Summary row
-  const summaryItems = [
-    { label: 'Total', value: pledges.length },
-    { label: 'Active', value: activeCount },
-    { label: 'Closed', value: closedCount },
-    { label: 'Principal', value: formatCurrency(totalPrincipal) },
-    { label: 'Interest', value: formatCurrency(totalInterest) },
-    { label: 'Grand Total', value: formatCurrency(grandTotal) }
+  // Summary boxes
+  const boxWidth = 55
+  const boxGap = 8
+  const totalBoxesWidth = (boxWidth * 5) + (boxGap * 4)
+  const startX = (pageWidth - totalBoxesWidth) / 2
+  
+  const summaryData = [
+    { label: 'Total Pledges', value: pledges.length, color: COLORS.primary, bgColor: COLORS.lightBlue },
+    { label: 'Active', value: activeCount, color: COLORS.success, bgColor: [240, 253, 244] },
+    { label: 'Closed', value: closedCount, color: COLORS.danger, bgColor: [254, 242, 242] },
+    { label: 'Total Principal', value: formatCurrencyPDF(totalPrincipal), color: COLORS.primaryDark, bgColor: COLORS.lightBlue },
+    { label: 'Total Interest', value: formatCurrencyPDF(totalInterest), color: COLORS.accent, bgColor: [240, 253, 250] }
   ]
   
-  doc.setFillColor(...COLORS.lightBlue)
-  doc.roundedRect(margin, yPos - 4, pageWidth - (margin * 2), 14, 3, 3, 'F')
-  doc.setDrawColor(...COLORS.primary)
-  doc.setLineWidth(0.4)
-  doc.roundedRect(margin, yPos - 4, pageWidth - (margin * 2), 14, 3, 3, 'S')
-  
-  const itemWidth = (pageWidth - (margin * 2)) / summaryItems.length
-  summaryItems.forEach((item, i) => {
-    const x = margin + (i * itemWidth) + (itemWidth / 2)
+  summaryData.forEach((item, i) => {
+    const x = startX + (i * (boxWidth + boxGap))
+    
+    // Card background
+    doc.setFillColor(...item.bgColor)
+    doc.roundedRect(x, yPos, boxWidth, 20, 3, 3, 'F')
+    
+    // Top accent bar
+    doc.setFillColor(...item.color)
+    doc.roundedRect(x, yPos, boxWidth, 4, 3, 3, 'F')
+    doc.rect(x, yPos + 2, boxWidth, 2, 'F')
+    
+    // Label
     doc.setFontSize(7)
     doc.setTextColor(...COLORS.textMuted)
     doc.setFont(undefined, 'normal')
-    doc.text(item.label, x, yPos, { align: 'center' })
-    doc.setFontSize(9)
-    doc.setTextColor(...COLORS.primary)
+    doc.text(item.label, x + boxWidth / 2, yPos + 10, { align: 'center' })
+    
+    // Value
+    doc.setFontSize(11)
+    doc.setTextColor(...item.color)
     doc.setFont(undefined, 'bold')
-    doc.text(String(item.value), x, yPos + 7, { align: 'center' })
+    doc.text(String(item.value), x + boxWidth / 2, yPos + 17, { align: 'center' })
   })
   
-  yPos += 16
+  yPos += 28
   
   // ============ DATA TABLE ============
   const headers = [['#', 'Pledge No', 'Date', 'Customer', 'Jewel Details', 'Gross', 'Net', 'Principal', 'Interest', 'Total', 'Status', 'Financer']]
@@ -568,12 +704,12 @@ export const downloadAllPledgesPDF = (pledges, reportTitle = 'All Pledges') => {
     p.pledge_no || '-',
     formatDate(p.date),
     p.customer_name || '-',
-    (p.jewels_details || '-').substring(0, 22) + ((p.jewels_details?.length || 0) > 22 ? '...' : ''),
+    (p.jewels_details || '-').substring(0, 20) + ((p.jewels_details?.length || 0) > 20 ? '...' : ''),
     `${p.gross_weight || 0}g`,
     `${p.net_weight || 0}g`,
-    formatCurrency(p.totalPrincipal || 0),
-    formatCurrency(p.totalInterest || 0),
-    formatCurrency(p.grandTotal || 0),
+    formatCurrencyPDF(p.totalPrincipal || 0),
+    formatCurrencyPDF(p.totalInterest || 0),
+    formatCurrencyPDF(p.grandTotal || 0),
     p.status,
     p.financer_name || '-'
   ])
@@ -582,38 +718,40 @@ export const downloadAllPledgesPDF = (pledges, reportTitle = 'All Pledges') => {
     startY: yPos,
     head: headers,
     body: rows,
-    theme: 'grid',
+    theme: 'plain',
     headStyles: { 
-      fillColor: COLORS.primary,
+      fillColor: COLORS.navy,
       textColor: COLORS.white,
       fontStyle: 'bold',
-      fontSize: 7,
+      fontSize: 8,
       halign: 'center',
-      cellPadding: 3
+      cellPadding: 5
     },
     bodyStyles: { 
-      fontSize: 6.5,
-      cellPadding: 2.5,
+      fontSize: 8,
+      cellPadding: 4,
       textColor: COLORS.text,
       halign: 'center',
-      valign: 'middle'
+      valign: 'middle',
+      lineColor: COLORS.border,
+      lineWidth: 0.2
     },
     alternateRowStyles: {
       fillColor: COLORS.lightBlue
     },
     columnStyles: {
-      0: { cellWidth: 8, halign: 'center' },
-      1: { cellWidth: 18, halign: 'center', fontStyle: 'bold', textColor: COLORS.primary },
-      2: { cellWidth: 18, halign: 'center' },
-      3: { cellWidth: 28, halign: 'left' },
+      0: { cellWidth: 10, halign: 'center', textColor: COLORS.textMuted },
+      1: { cellWidth: 20, halign: 'center', fontStyle: 'bold', textColor: COLORS.primary },
+      2: { cellWidth: 22, halign: 'center' },
+      3: { cellWidth: 30, halign: 'left' },
       4: { cellWidth: 38, halign: 'left' },
-      5: { cellWidth: 15, halign: 'right' },
-      6: { cellWidth: 15, halign: 'right' },
-      7: { cellWidth: 22, halign: 'right' },
-      8: { cellWidth: 20, halign: 'right', textColor: COLORS.success },
-      9: { cellWidth: 22, halign: 'right', fontStyle: 'bold' },
-      10: { cellWidth: 16, halign: 'center' },
-      11: { cellWidth: 32, halign: 'left' }
+      5: { cellWidth: 16, halign: 'right' },
+      6: { cellWidth: 16, halign: 'right' },
+      7: { cellWidth: 28, halign: 'right' },
+      8: { cellWidth: 26, halign: 'right', textColor: COLORS.accent },
+      9: { cellWidth: 28, halign: 'right', fontStyle: 'bold' },
+      10: { cellWidth: 18, halign: 'center' },
+      11: { cellWidth: 28, halign: 'left' }
     },
     margin: { left: margin, right: margin },
     didParseCell: (data) => {
@@ -621,20 +759,27 @@ export const downloadAllPledgesPDF = (pledges, reportTitle = 'All Pledges') => {
         if (data.cell.text[0] === 'ACTIVE') {
           data.cell.styles.textColor = COLORS.success
           data.cell.styles.fontStyle = 'bold'
+        } else if (data.cell.text[0] === 'CLOSED') {
+          data.cell.styles.textColor = COLORS.danger
         }
       }
     }
   })
   
-  // ============ FOOTER ============
-  const footerY = pageHeight - 8
-  doc.setDrawColor(...COLORS.primary)
-  doc.setLineWidth(0.5)
-  doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5)
+  // ============ ELEGANT FOOTER ============
+  const footerY = pageHeight - 12
   
-  doc.setFontSize(7)
+  // Footer accent line
+  doc.setDrawColor(...COLORS.accent)
+  doc.setLineWidth(0.8)
+  doc.line(margin, footerY - 6, pageWidth - margin, footerY - 6)
+  
+  // Footer text
+  doc.setFontSize(8)
   doc.setTextColor(...COLORS.textMuted)
-  doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}  •  Sri Orusol Jeweller  •  Total Records: ${pledges.length}`, pageWidth / 2, footerY, { align: 'center' })
+  doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}`, margin, footerY)
+  doc.text('Sri Orusol Jeweller - Trusted Gold Finance Services', pageWidth / 2, footerY, { align: 'center' })
+  doc.text(`Total: ${pledges.length} records`, pageWidth - margin, footerY, { align: 'right' })
   
   const filename = reportTitle.replace(/\s+/g, '_')
   doc.save(`${filename}_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`)

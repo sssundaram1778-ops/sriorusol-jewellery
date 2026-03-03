@@ -85,10 +85,13 @@ export const usePledgeStore = create((set, get) => ({
         place: pledgeData.place,
         loan_amount: pledgeData.initialAmount,
         interest_rate: pledgeData.interest_rate,
+        jewel_type: pledgeData.jewel_type || 'GOLD',
         jewels_details: pledgeData.jewels_details,
         no_of_items: pledgeData.no_of_items,
         gross_weight: pledgeData.gross_weight,
-        net_weight: pledgeData.net_weight
+        net_weight: pledgeData.net_weight,
+        parent_pledge_id: pledgeData.parent_pledge_id || null,
+        parent_pledge_no: pledgeData.parent_pledge_no || null
       }
       const newPledge = await api.createPledge(apiData)
       set((state) => ({
