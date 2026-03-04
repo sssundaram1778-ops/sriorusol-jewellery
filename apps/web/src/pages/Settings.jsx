@@ -1,14 +1,24 @@
 import { useTranslation } from 'react-i18next'
-import { Database, Info, Gem, Shield, Clock, ChevronLeft, Layers } from 'lucide-react'
+import { Database, Info, Gem, Shield, Clock, ChevronLeft, Layers, LogOut, Lock, Mail } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useCategoryStore } from '../store/categoryStore'
 import CategoryBadge from '../components/CategoryBadge'
+import { clearEncryptionSession } from '../lib/encryption'
+import { clearPINAuth } from '../components/PINLogin'
 
 export default function Settings() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { activeCategory, setCategory } = useCategoryStore()
   const isFirst = activeCategory === 'FIRST'
+
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to logout? You will need to enter PIN and master password again.')) {
+      clearPINAuth() // Clear PIN session
+      clearEncryptionSession() // Clear encryption session
+      window.location.reload()
+    }
+  }
 
   return (
     <div className={`min-h-screen ${isFirst ? 'bg-blue-50' : 'bg-purple-50'} pb-20`}>
@@ -160,6 +170,51 @@ export default function Settings() {
             </div>
             <span className="text-xs text-slate-400 font-medium">Powered by Neon</span>
           </div>
+        </div>
+
+        {/* Security & Encryption */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+          <div className="flex items-center gap-3 mb-4">
+            <div className={`w-12 h-12 ${isFirst ? 'bg-blue-100' : 'bg-purple-100'} rounded-xl flex items-center justify-center`}>
+              <Lock className={`w-6 h-6 ${isFirst ? 'text-blue-600' : 'text-purple-600'}`} />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-800">Security</h3>
+              <p className="text-xs text-slate-500">Encryption & Access Control</p>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            {/* Email OTP Authentication */}
+            <div className="flex justify-between items-center py-3 px-4 bg-blue-50 border border-blue-100 rounded-xl">
+              <div className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-blue-600" />
+                <span className="text-sm text-blue-700 font-medium">Email OTP Authentication</span>
+              </div>
+              <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-bold">VERIFIED</span>
+            </div>
+            
+            {/* AES-256 Encryption */}
+            <div className="flex justify-between items-center py-3 px-4 bg-emerald-50 border border-emerald-100 rounded-xl">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-emerald-600" />
+                <span className="text-sm text-emerald-700 font-medium">AES-256-GCM Encryption</span>
+              </div>
+              <span className="text-xs bg-emerald-500 text-white px-2 py-1 rounded-full font-bold">ACTIVE</span>
+            </div>
+            
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl text-red-600 font-medium transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              <span>Logout & Lock</span>
+            </button>
+          </div>
+          
+          <p className="text-xs text-slate-400 text-center mt-3">
+            2-Factor: Email OTP + Master Password + AES-256 Encryption
+          </p>
         </div>
 
         {/* About */}
