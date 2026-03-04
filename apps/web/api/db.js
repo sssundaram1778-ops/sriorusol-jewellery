@@ -309,6 +309,134 @@ export default async function handler(req, res) {
         await sql`DELETE FROM owner_repledges WHERE id = ${data.id}`
         return res.json({ success: true })
 
+      // ============ APP SETTINGS (PIN/Security) ============
+      case 'getAppSettings':
+        // Get app settings (PIN, security question)
+        const [settings] = await sql`
+          SELECT * FROM app_settings WHERE id = 'main' LIMIT 1
+        `
+        return res.json({ data: settings || null })
+
+      case 'setupPIN':
+        // Setup PIN and security question (first time or reset)
+        // First check if settings exist
+        const [existingSettings] = await sql`
+          SELECT id FROM app_settings WHERE id = 'main' LIMIT 1
+        `
+        
+        if (existingSettings) {
+          // Update existing
+          await sql`
+            UPDATE app_settings SET
+              pin_hash = ${data.pin_hash},
+              security_question = ${data.security_question},
+              security_answer_hash = ${data.security_answer_hash},
+              updated_at = NOW()
+            WHERE id = 'main'
+          `
+        } else {
+          // Insert new
+          await sql`
+            INSERT INTO app_settings (id, pin_hash, security_question, security_answer_hash, lockout_until, failed_attempts, created_at, updated_at)
+            VALUES ('main', ${data.pin_hash}, ${data.security_question}, ${data.security_answer_hash}, NULL, 0, NOW(), NOW())
+          `
+        }
+        return res.json({ success: true })
+
+      case 'verifyPIN':
+        // Verify PIN and return result
+        const [pinSettings] = await sql`
+          SELECT pin_hash, lockout_until, failed_attempts FROM app_settings WHERE id = 'main' LIMIT 1
+        `
+        
+        if (!pinSettings) {
+          return res.json({ data: { exists: false } })
+        }
+        
+        // Check lockout
+        if (pinSettings.lockout_until && new Date(pinSettings.lockout_until) > new Date()) {
+          return res.json({ 
+            data: { 
+              locked: true, 
+              lockout_until: pinSettings.lockout_until,
+              failed_attempts: pinSettings.failed_attempts 
+            } 
+          })
+        }
+        
+        const isValid = pinSettings.pin_hash === data.pin_hash
+        
+        if (isValid) {
+          // Reset failed attempts on success
+          await sql`
+            UPDATE app_settings SET failed_attempts = 0, lockout_until = NULL, updated_at = NOW()
+            WHERE id = 'main'
+          `
+          return res.json({ data: { valid: true } })
+        } else {
+          // Increment failed attempts
+          const newAttempts = (pinSettings.failed_attempts || 0) + 1
+          let lockoutUntil = null
+          
+          // Lock after 5 failed attempts for 5 minutes
+          if (newAttempts >= 5) {
+            lockoutUntil = new Date(Date.now() + 5 * 60 * 1000).toISOString()
+          }
+          
+          await sql`
+            UPDATE app_settings SET 
+              failed_attempts = ${newAttempts}, 
+              lockout_until = ${lockoutUntil},
+              updated_at = NOW()
+            WHERE id = 'main'
+          `
+          
+          return res.json({ 
+            data: { 
+              valid: false, 
+              failed_attempts: newAttempts,
+              locked: newAttempts >= 5,
+              lockout_until: lockoutUntil
+            } 
+          })
+        }
+
+      case 'verifySecurityAnswer':
+        // Verify security answer for PIN reset
+        const [secSettings] = await sql`
+          SELECT security_answer_hash FROM app_settings WHERE id = 'main' LIMIT 1
+        `
+        
+        if (!secSettings) {
+          return res.json({ data: { exists: false } })
+        }
+        
+        const answerValid = secSettings.security_answer_hash === data.answer_hash
+        
+        if (answerValid) {
+          // Reset lockout on successful recovery
+          await sql`
+            UPDATE app_settings SET failed_attempts = 0, lockout_until = NULL, updated_at = NOW()
+            WHERE id = 'main'
+          `
+        }
+        
+        return res.json({ data: { valid: answerValid } })
+
+      case 'resetPIN':
+        // Reset PIN after security verification
+        await sql`
+          UPDATE app_settings SET
+            pin_hash = NULL,
+            security_question = NULL,
+            security_answer_hash = NULL,
+            failed_attempts = 0,
+            lockout_until = NULL,
+            updated_at = NOW()
+          WHERE id = 'main'
+        `
+        return res.json({ success: true })
+
       default:
         return res.status(400).json({ error: 'Invalid action' })
     }

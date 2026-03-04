@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Shield, Lock, AlertCircle, Check, KeyRound, HelpCircle, ArrowRight } from 'lucide-react'
 
-const PIN_STORAGE_KEY = 'app_pin_hash'
-const SECURITY_QUESTION_KEY = 'app_security_qa'
 const MAX_ATTEMPTS = 5
 const LOCKOUT_TIME = 300000 // 5 minutes lockout
-const LOCKOUT_KEY = 'app_lockout'
 
 // Simple hash function for PIN (SHA-256 simulation using browser crypto)
 const hashPIN = async (pin) => {
@@ -14,6 +11,21 @@ const hashPIN = async (pin) => {
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+// API helper for PIN operations
+const apiCall = async (action, data = {}) => {
+  const apiUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/db` : '/api/db'
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, data }),
+  })
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.error || `API request failed: ${response.status}`)
+  }
+  return response.json()
 }
 
 const PINLogin = ({ onAuthenticated }) => {
@@ -44,34 +56,31 @@ const PINLogin = ({ onAuthenticated }) => {
     'What was your childhood nickname?'
   ]
 
-  // Check if PIN is already set up
+  // Check if PIN is already set up (from server)
   useEffect(() => {
-    const checkSetup = () => {
-      const pinHash = localStorage.getItem(PIN_STORAGE_KEY)
-      const lockout = localStorage.getItem(LOCKOUT_KEY)
-      
-      // Check lockout
-      if (lockout) {
-        const lockoutData = JSON.parse(lockout)
-        const remaining = lockoutData.until - Date.now()
-        if (remaining > 0) {
-          setIsLocked(true)
-          setLockoutRemaining(remaining)
-          setAttempts(lockoutData.attempts)
+    const checkSetup = async () => {
+      try {
+        const result = await apiCall('getAppSettings')
+        const settings = result.data
+        
+        if (settings && settings.pin_hash) {
+          // PIN exists on server
+          setSavedQuestion(settings.security_question || '')
+          
+          // Check lockout
+          if (settings.lockout_until && new Date(settings.lockout_until) > new Date()) {
+            setIsLocked(true)
+            setLockoutRemaining(new Date(settings.lockout_until) - new Date())
+            setAttempts(settings.failed_attempts || 0)
+          }
+          
+          setStep('login')
         } else {
-          localStorage.removeItem(LOCKOUT_KEY)
+          setStep('setup')
         }
-      }
-      
-      if (pinHash) {
-        // Load saved security question for recovery
-        const securityData = localStorage.getItem(SECURITY_QUESTION_KEY)
-        if (securityData) {
-          const data = JSON.parse(securityData)
-          setSavedQuestion(data.question)
-        }
-        setStep('login')
-      } else {
+      } catch (error) {
+        console.error('Error checking PIN setup:', error)
+        // Fallback to setup if API fails
         setStep('setup')
       }
     }
@@ -126,7 +135,7 @@ const PINLogin = ({ onAuthenticated }) => {
     }
   }
 
-  // Setup new PIN
+  // Setup new PIN (store on server)
   const handleSetup = async (e) => {
     e.preventDefault()
     setError('')
@@ -164,23 +173,25 @@ const PINLogin = ({ onAuthenticated }) => {
       const hashedPin = await hashPIN(pinValue)
       const hashedAnswer = await hashPIN(securityAnswer.toLowerCase().trim())
       
-      localStorage.setItem(PIN_STORAGE_KEY, hashedPin)
-      localStorage.setItem(SECURITY_QUESTION_KEY, JSON.stringify({
-        question: securityQuestion,
-        answerHash: hashedAnswer
-      }))
+      // Store PIN on server
+      await apiCall('setupPIN', {
+        pin_hash: hashedPin,
+        security_question: securityQuestion,
+        security_answer_hash: hashedAnswer
+      })
       
       // Store auth in session
       sessionStorage.setItem('pin_authenticated', 'true')
       onAuthenticated()
     } catch (err) {
+      console.error('PIN setup error:', err)
       setError('Failed to setup PIN. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  // Verify PIN login
+  // Verify PIN login (from server)
   const handleLogin = async (e) => {
     e?.preventDefault()
     
@@ -198,27 +209,38 @@ const PINLogin = ({ onAuthenticated }) => {
     
     try {
       const hashedPin = await hashPIN(pinValue)
-      const storedHash = localStorage.getItem(PIN_STORAGE_KEY)
       
-      if (hashedPin === storedHash) {
-        // Success - clear lockout data
-        localStorage.removeItem(LOCKOUT_KEY)
+      // Verify PIN on server
+      const result = await apiCall('verifyPIN', { pin_hash: hashedPin })
+      const verifyResult = result.data
+      
+      if (verifyResult.locked) {
+        // User is locked out
+        setIsLocked(true)
+        const remaining = new Date(verifyResult.lockout_until) - new Date()
+        setLockoutRemaining(remaining > 0 ? remaining : LOCKOUT_TIME)
+        setAttempts(verifyResult.failed_attempts || MAX_ATTEMPTS)
+        setError(`Too many attempts. Locked for 5 minutes.`)
+        setPin(['', '', '', ''])
+        pinRefs[0].current?.focus()
+        return
+      }
+      
+      if (verifyResult.valid) {
+        // Success
         sessionStorage.setItem('pin_authenticated', 'true')
         onAuthenticated()
       } else {
         // Wrong PIN
-        const newAttempts = attempts + 1
+        const newAttempts = verifyResult.failed_attempts || (attempts + 1)
         setAttempts(newAttempts)
         
-        if (newAttempts >= MAX_ATTEMPTS) {
-          // Lock out user
-          const lockoutData = {
-            until: Date.now() + LOCKOUT_TIME,
-            attempts: newAttempts
-          }
-          localStorage.setItem(LOCKOUT_KEY, JSON.stringify(lockoutData))
+        if (verifyResult.locked || newAttempts >= MAX_ATTEMPTS) {
           setIsLocked(true)
-          setLockoutRemaining(LOCKOUT_TIME)
+          const remaining = verifyResult.lockout_until 
+            ? new Date(verifyResult.lockout_until) - new Date() 
+            : LOCKOUT_TIME
+          setLockoutRemaining(remaining > 0 ? remaining : LOCKOUT_TIME)
           setError(`Too many attempts. Locked for 5 minutes.`)
         } else {
           setError(`Invalid PIN. ${MAX_ATTEMPTS - newAttempts} attempts remaining.`)
@@ -228,13 +250,14 @@ const PINLogin = ({ onAuthenticated }) => {
         pinRefs[0].current?.focus()
       }
     } catch (err) {
+      console.error('PIN verification error:', err)
       setError('Verification failed. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  // Handle PIN recovery
+  // Handle PIN recovery (from server)
   const handleRecovery = async (e) => {
     e.preventDefault()
     setError('')
@@ -247,14 +270,15 @@ const PINLogin = ({ onAuthenticated }) => {
     setLoading(true)
     
     try {
-      const securityData = JSON.parse(localStorage.getItem(SECURITY_QUESTION_KEY))
       const hashedAnswer = await hashPIN(recoveryAnswer.toLowerCase().trim())
       
-      if (hashedAnswer === securityData.answerHash) {
-        // Correct answer - allow PIN reset
-        localStorage.removeItem(PIN_STORAGE_KEY)
-        localStorage.removeItem(SECURITY_QUESTION_KEY)
-        localStorage.removeItem(LOCKOUT_KEY)
+      // Verify security answer on server
+      const result = await apiCall('verifySecurityAnswer', { answer_hash: hashedAnswer })
+      
+      if (result.data?.valid) {
+        // Correct answer - reset PIN on server
+        await apiCall('resetPIN')
+        
         setAttempts(0)
         setIsLocked(false)
         setPin(['', '', '', ''])
@@ -266,6 +290,7 @@ const PINLogin = ({ onAuthenticated }) => {
         setError('Incorrect answer. Please try again.')
       }
     } catch (err) {
+      console.error('PIN recovery error:', err)
       setError('Recovery failed. Please try again.')
     } finally {
       setLoading(false)
@@ -596,7 +621,7 @@ const PINLogin = ({ onAuthenticated }) => {
         <div className="text-center mt-6">
           <div className="inline-flex items-center gap-2 bg-white/80 px-4 py-2 rounded-full shadow-sm">
             <KeyRound className="w-4 h-4 text-green-600" />
-            <span className="text-sm text-gray-600">Secured with Local PIN</span>
+            <span className="text-sm text-gray-600">Secured with Server-side PIN</span>
           </div>
         </div>
 
@@ -619,9 +644,21 @@ export const clearPINAuth = () => {
   sessionStorage.removeItem('pin_authenticated')
 }
 
-// Check if PIN is setup
-export const hasPINSetup = () => {
-  return !!localStorage.getItem(PIN_STORAGE_KEY)
+// Check if PIN is setup (async - calls server)
+export const hasPINSetup = async () => {
+  try {
+    const apiUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/db` : '/api/db'
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'getAppSettings', data: {} }),
+    })
+    if (!response.ok) return false
+    const result = await response.json()
+    return !!(result.data?.pin_hash)
+  } catch {
+    return false
+  }
 }
 
 export default PINLogin
