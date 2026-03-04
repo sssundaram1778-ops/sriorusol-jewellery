@@ -1,0 +1,12 @@
+# Electron builds
+electron-dist/
+electron/
+android-build/
+android/
+*.apk
+
+# Large files
+*.exe
+*.asar
+*.dll
+*.pak

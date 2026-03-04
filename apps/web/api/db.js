@@ -1,8 +1,10 @@
 import { neon } from '@neondatabase/serverless'
+import { securityMiddleware, sanitizeErrorMessage, getClientIP } from './middleware/security.js'
 
-// Server-side database connection
+// Server-side database connection - Use server-side env vars only
 const getDatabaseUrl = () => {
-  return process.env.VITE_DATABASE_URL || process.env.DATABASE_URL
+  // Priority: DATABASE_URL (server-side) > VITE_DATABASE_URL (fallback)
+  return process.env.DATABASE_URL || process.env.VITE_DATABASE_URL
 }
 
 let sql = null
@@ -48,15 +50,28 @@ const executeRawSql = async (query, params = []) => {
   return rawSql(strings, ...params)
 }
 
-export default async function handler(req, res) {
-  // Set CORS headers for all requests
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+// Request logging for security audit
+const logRequest = (req, action, success = true) => {
+  const ip = getClientIP(req)
+  const timestamp = new Date().toISOString()
+  console.log(`[${timestamp}] ${success ? 'OK' : 'ERR'} ${ip} - ${action}`)
+}
 
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
+export default async function handler(req, res) {
+  // Apply security middleware
+  const securityCheck = securityMiddleware(req, res)
+  
+  // Handle preflight
+  if (securityCheck.preflight) {
     return res.status(200).end()
+  }
+  
+  // Handle security errors
+  if (!securityCheck.passed) {
+    logRequest(req, 'SECURITY_BLOCK', false)
+    return res.status(securityCheck.error.status).json({ 
+      error: securityCheck.error.message 
+    })
   }
 
   // Check if database is available
@@ -66,6 +81,9 @@ export default async function handler(req, res) {
 
   try {
     const { action, data } = req.body || {}
+    
+    // Log the action for audit
+    logRequest(req, action || 'unknown')
     
     switch (action) {
       // Health check
@@ -296,6 +314,8 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error('API Error:', error)
-    return res.status(500).json({ error: error.message })
+    logRequest(req, `ERROR: ${action}`, false)
+    // Sanitize error message before sending to client
+    return res.status(500).json({ error: sanitizeErrorMessage(error) })
   }
 }

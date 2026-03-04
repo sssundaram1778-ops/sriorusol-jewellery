@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
+import { neon } from '@neondatabase/serverless'
 
-// Vercel Serverless Function for Supabase keep-alive
+// Vercel Serverless Function for Neon keep-alive
 // This prevents the free tier database from pausing due to inactivity
 
 export const config = {
@@ -8,13 +8,12 @@ export const config = {
 }
 
 export default async function handler(request) {
-  const supabaseUrl = process.env.VITE_SUPABASE_URL
-  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
+  const databaseUrl = process.env.DATABASE_URL || process.env.VITE_DATABASE_URL
 
-  if (!supabaseUrl || !supabaseKey) {
+  if (!databaseUrl) {
     return new Response(JSON.stringify({ 
       success: false, 
-      error: 'Supabase not configured' 
+      error: 'Database not configured' 
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
@@ -22,24 +21,10 @@ export default async function handler(request) {
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const sql = neon(databaseUrl)
     
     // Simple query to keep the database active
-    const { error } = await supabase
-      .from('pledges')
-      .select('id')
-      .limit(1)
-
-    if (error) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: error.message,
-        timestamp: new Date().toISOString()
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      })
-    }
+    await sql`SELECT 1`
 
     return new Response(JSON.stringify({ 
       success: true, 
@@ -52,7 +37,7 @@ export default async function handler(request) {
   } catch (error) {
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message,
+      error: 'Database ping failed',
       timestamp: new Date().toISOString()
     }), {
       status: 500,

@@ -1,0 +1,15 @@
+# Electron and Android builds
+apps/web/electron-dist/
+apps/web/android-build/
+apps/web/android/
+apps/web/electron/
+*.apk
+*.exe
+*.asar
+
+# Node modules
+node_modules/
+
+# Large files
+*.pak
+*.dll
