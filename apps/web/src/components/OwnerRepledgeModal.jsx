@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { X, Landmark, FileText, Search } from 'lucide-react'
 import { getFinancerList } from '../lib/database'
 import DateInput from './DateInput'
+import { useCategoryStore } from '../store/categoryStore'
 
 const ownerRepledgeSchema = z.object({
   financer_name: z.string().min(1, 'Financer name is required'),
@@ -26,6 +27,8 @@ export default function OwnerRepledgeModal({
   const [filteredFinancers, setFilteredFinancers] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const { activeCategory } = useCategoryStore()
+  const isFirst = activeCategory === 'FIRST'
 
   const {
     register,
@@ -119,7 +122,7 @@ export default function OwnerRepledgeModal({
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold flex items-center gap-2">
-            <Landmark className="w-5 h-5 text-blue-600" />
+            <Landmark className={`w-5 h-5 ${isFirst ? 'text-blue-600' : 'text-purple-600'}`} />
             {t('ownerRepledge.title')}
           </h3>
           <button onClick={onClose} className="btn btn-sm btn-ghost btn-circle">
@@ -155,7 +158,7 @@ export default function OwnerRepledgeModal({
                 onChange={handleFinancerInputChange}
                 onFocus={() => searchQuery.length > 0 && filteredFinancers.length > 0 && setShowSuggestions(true)}
                 placeholder={t('ownerRepledge.searchFinancer')}
-                className="input input-bordered w-full pl-10 focus:border-blue-500"
+                className={`input input-bordered w-full pl-10 ${isFirst ? 'focus:border-blue-500' : 'focus:border-purple-500'}`}
                 autoComplete="off"
               />
             </div>
@@ -167,7 +170,7 @@ export default function OwnerRepledgeModal({
                     key={index}
                     type="button"
                     onClick={() => handleFinancerSelect(financer)}
-                    className="w-full px-4 py-2 text-left hover:bg-blue-50 border-b border-slate-100 last:border-0"
+                    className={`w-full px-4 py-2 text-left ${isFirst ? 'hover:bg-blue-50' : 'hover:bg-purple-50'} border-b border-slate-100 last:border-0`}
                   >
                     <span className="font-medium text-slate-800">{financer.name}</span>
                     {financer.place && <span className="text-slate-500 text-sm ml-2">({financer.place})</span>}
@@ -192,7 +195,7 @@ export default function OwnerRepledgeModal({
                 type="number"
                 {...register('amount', { valueAsNumber: true })}
                 placeholder="0"
-                className="input input-bordered w-full pl-8 focus:border-blue-500"
+                className={`input input-bordered w-full pl-8 ${isFirst ? 'focus:border-blue-500' : 'focus:border-purple-500'}`}
               />
             </div>
             {errors.amount && <span className="text-error text-sm mt-1">{errors.amount.message}</span>}
@@ -206,7 +209,7 @@ export default function OwnerRepledgeModal({
             <DateInput
               value={watch('debt_date')}
               onChange={(e) => setValue('debt_date', e.target.value)}
-              className="input input-bordered w-full focus:border-blue-500"
+              className={`input input-bordered w-full ${isFirst ? 'focus:border-blue-500' : 'focus:border-purple-500'}`}
             />
             {errors.debt_date && <span className="text-error text-sm mt-1">{errors.debt_date.message}</span>}
           </div>
@@ -219,7 +222,7 @@ export default function OwnerRepledgeModal({
             <textarea
               {...register('notes')}
               placeholder={t('pledge.enterNotes')}
-              className="textarea textarea-bordered w-full h-16 focus:border-blue-500"
+              className={`textarea textarea-bordered w-full h-16 ${isFirst ? 'focus:border-blue-500' : 'focus:border-purple-500'}`}
             />
           </div>
 
@@ -235,7 +238,7 @@ export default function OwnerRepledgeModal({
             </button>
             <button
               type="submit"
-              className="btn bg-blue-500 hover:bg-blue-600 text-white border-none flex-1"
+              className={`btn ${isFirst ? 'bg-blue-500 hover:bg-blue-600' : 'bg-purple-500 hover:bg-purple-600'} text-white border-none flex-1`}
               disabled={submitting}
             >
               {submitting ? (

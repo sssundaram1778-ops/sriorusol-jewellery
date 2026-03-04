@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { X, CheckCircle, Calendar } from 'lucide-react'
 import DateInput from './DateInput'
+import { useCategoryStore } from '../store/categoryStore'
 
 const closeSchema = z.object({
   release_date: z.string().min(1, 'Release date is required')
@@ -18,6 +19,8 @@ export default function CloseOwnerRepledgeModal({
 }) {
   const { t } = useTranslation()
   const [submitting, setSubmitting] = useState(false)
+  const { activeCategory } = useCategoryStore()
+  const isFirst = activeCategory === 'FIRST'
 
   const {
     register,
@@ -89,13 +92,13 @@ export default function CloseOwnerRepledgeModal({
         </div>
 
         {/* Re-Pledge Info */}
-        <div className="bg-blue-50 rounded-lg p-3 mb-4 border border-blue-200">
+        <div className={`${isFirst ? 'bg-blue-50 border-blue-200' : 'bg-purple-50 border-purple-200'} rounded-lg p-3 mb-4 border`}>
           <div className="text-sm space-y-1">
-            <p><span className="text-blue-700">{t('ownerRepledge.financerName')}:</span> <span className="font-medium text-blue-900">{ownerRepledge.financer_name}</span></p>
-            <p><span className="text-blue-700">{t('ownerRepledge.amount')}:</span> <span className="font-medium text-blue-900">{formatCurrency(ownerRepledge.amount)}</span></p>
-            <p><span className="text-blue-700">{t('ownerRepledge.debtDate')}:</span> <span className="font-medium text-blue-900">{formatDate(ownerRepledge.debt_date)}</span></p>
+            <p><span className={`${isFirst ? 'text-blue-700' : 'text-purple-700'}`}>{t('ownerRepledge.financerName')}:</span> <span className={`font-medium ${isFirst ? 'text-blue-900' : 'text-purple-900'}`}>{ownerRepledge.financer_name}</span></p>
+            <p><span className={`${isFirst ? 'text-blue-700' : 'text-purple-700'}`}>{t('ownerRepledge.amount')}:</span> <span className={`font-medium ${isFirst ? 'text-blue-900' : 'text-purple-900'}`}>{formatCurrency(ownerRepledge.amount)}</span></p>
+            <p><span className={`${isFirst ? 'text-blue-700' : 'text-purple-700'}`}>{t('ownerRepledge.debtDate')}:</span> <span className={`font-medium ${isFirst ? 'text-blue-900' : 'text-purple-900'}`}>{formatDate(ownerRepledge.debt_date)}</span></p>
             {ownerRepledge.interest_amount > 0 && (
-              <p><span className="text-blue-700">{t('ownerRepledge.interestAmount')}:</span> <span className="font-medium text-orange-600">{formatCurrency(ownerRepledge.interest_amount)}</span></p>
+              <p><span className={`${isFirst ? 'text-blue-700' : 'text-purple-700'}`}>{t('ownerRepledge.interestAmount')}:</span> <span className="font-medium text-orange-600">{formatCurrency(ownerRepledge.interest_amount)}</span></p>
             )}
           </div>
         </div>

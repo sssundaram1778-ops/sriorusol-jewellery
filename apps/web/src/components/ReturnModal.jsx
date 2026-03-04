@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { X, UserPlus } from 'lucide-react'
 import DateInput from './DateInput'
+import { useCategoryStore } from '../store/categoryStore'
 
 const returnSchema = z.object({
   new_customer_name: z.string().min(1, 'New customer name is required'),
@@ -17,6 +18,8 @@ const returnSchema = z.object({
 export default function ReturnModal({ isOpen, onClose, onSubmit, pledge, defaultInterestRate = 2 }) {
   const { t } = useTranslation()
   const [submitting, setSubmitting] = useState(false)
+  const { activeCategory } = useCategoryStore()
+  const isFirst = activeCategory === 'FIRST'
 
   const {
     register,
@@ -56,7 +59,7 @@ export default function ReturnModal({ isOpen, onClose, onSubmit, pledge, default
       <div className="bg-white rounded-xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-blue-500" />
+            <UserPlus className={`w-5 h-5 ${isFirst ? 'text-blue-500' : 'text-purple-500'}`} />
             {t('pledge.repledge')}
           </h3>
           <button onClick={onClose} className="btn btn-sm btn-ghost btn-circle">
@@ -64,8 +67,8 @@ export default function ReturnModal({ isOpen, onClose, onSubmit, pledge, default
           </button>
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-          <p className="text-sm text-blue-800">
+        <div className={`${isFirst ? 'bg-blue-50 border-blue-200' : 'bg-purple-50 border-purple-200'} border rounded-lg p-3 mb-4`}>
+          <p className={`text-sm ${isFirst ? 'text-blue-800' : 'text-purple-800'}`}>
             {t('pledge.repledgeInfo')}
           </p>
         </div>
@@ -80,7 +83,7 @@ export default function ReturnModal({ isOpen, onClose, onSubmit, pledge, default
               type="text"
               {...register('new_customer_name')}
               placeholder={t('pledge.enterNewCustomerName')}
-              className="input input-bordered w-full focus:border-blue-600"
+              className={`input input-bordered w-full ${isFirst ? 'focus:border-blue-600' : 'focus:border-purple-600'}`}
             />
             {errors.new_customer_name && <span className="text-error text-sm mt-1">{errors.new_customer_name.message}</span>}
           </div>
@@ -93,7 +96,7 @@ export default function ReturnModal({ isOpen, onClose, onSubmit, pledge, default
             <DateInput
               value={watch('date')}
               onChange={(e) => setValue('date', e.target.value)}
-              className="input input-bordered w-full focus:border-blue-600"
+              className={`input input-bordered w-full ${isFirst ? 'focus:border-blue-600' : 'focus:border-purple-600'}`}
             />
             {errors.date && <span className="text-error text-sm mt-1">{errors.date.message}</span>}
           </div>
@@ -109,7 +112,7 @@ export default function ReturnModal({ isOpen, onClose, onSubmit, pledge, default
                 type="number"
                 {...register('amount', { valueAsNumber: true })}
                 placeholder="0"
-                className="input input-bordered w-full pl-8 focus:border-blue-600"
+                className={`input input-bordered w-full pl-8 ${isFirst ? 'focus:border-blue-600' : 'focus:border-purple-600'}`}
               />
             </div>
             {errors.amount && <span className="text-error text-sm mt-1">{errors.amount.message}</span>}
@@ -125,7 +128,7 @@ export default function ReturnModal({ isOpen, onClose, onSubmit, pledge, default
                 type="number"
                 step="0.1"
                 {...register('interest_rate', { valueAsNumber: true })}
-                className="input input-bordered w-full pr-8 focus:border-blue-600"
+                className={`input input-bordered w-full pr-8 ${isFirst ? 'focus:border-blue-600' : 'focus:border-purple-600'}`}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">%</span>
             </div>
@@ -139,7 +142,7 @@ export default function ReturnModal({ isOpen, onClose, onSubmit, pledge, default
             <textarea
               {...register('notes')}
               placeholder={t('pledge.enterNotes')}
-              className="textarea textarea-bordered w-full h-20 focus:border-blue-600"
+              className={`textarea textarea-bordered w-full h-20 ${isFirst ? 'focus:border-blue-600' : 'focus:border-purple-600'}`}
             />
           </div>
 
@@ -155,7 +158,7 @@ export default function ReturnModal({ isOpen, onClose, onSubmit, pledge, default
             </button>
             <button
               type="submit"
-              className="btn bg-blue-500 hover:bg-blue-600 text-white border-none flex-1"
+              className={`btn ${isFirst ? 'bg-blue-500 hover:bg-blue-600' : 'bg-purple-500 hover:bg-purple-600'} text-white border-none flex-1`}
               disabled={submitting}
             >
               {submitting ? (
@@ -171,5 +174,3 @@ export default function ReturnModal({ isOpen, onClose, onSubmit, pledge, default
     </div>
   )
 }
-
-

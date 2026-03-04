@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { X, RefreshCw, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react'
 import DateInput from './DateInput'
+import { useCategoryStore } from '../store/categoryStore'
 
 const returnSchema = z.object({
   total_amount: z.number().min(1, 'Total amount must be greater than 0'),
@@ -23,6 +24,8 @@ export default function AdditionalAmountReturnModal({
   const { t } = useTranslation()
   const [submitting, setSubmitting] = useState(false)
   const [step, setStep] = useState(1) // Step 1: Review, Step 2: Enter new amount
+  const { activeCategory } = useCategoryStore()
+  const isFirst = activeCategory === 'FIRST'
 
   const {
     register,
@@ -189,8 +192,8 @@ export default function AdditionalAmountReturnModal({
         {step === 2 && (
           <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
             {/* Reference Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-sm text-blue-800">
+            <div className={`${isFirst ? 'bg-blue-50 border-blue-200' : 'bg-purple-50 border-purple-200'} border rounded-lg p-3`}>
+              <p className={`text-sm ${isFirst ? 'text-blue-800' : 'text-purple-800'}`}>
                 <span className="font-medium">{t('pledge.referencePledge')}:</span> {pledge?.pledge_no}
               </p>
             </div>

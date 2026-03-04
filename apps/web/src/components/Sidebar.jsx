@@ -7,6 +7,7 @@ import {
   Gem,
   Landmark
 } from 'lucide-react'
+import { useCategoryStore } from '../store/categoryStore'
 
 // Clean 5-item navigation - same as mobile
 const navItems = [
@@ -19,18 +20,26 @@ const navItems = [
 
 export default function Sidebar() {
   const location = useLocation()
+  const { activeCategory } = useCategoryStore()
+  const isSecond = activeCategory === 'SECOND'
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-72 bg-gradient-to-b from-slate-900 to-slate-800 flex flex-col z-50">
       {/* Logo Section */}
       <div className="p-6 border-b border-white/10">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
+            isSecond 
+              ? 'bg-gradient-to-br from-purple-500 to-purple-600 shadow-purple-500/30' 
+              : 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/30'
+          }`}>
             <Gem className="w-6 h-6 text-white" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight">Sri Orusol</h1>
-            <p className="text-xs text-slate-400 font-medium">Jeweller Management</p>
+            <p className={`text-xs font-medium ${isSecond ? 'text-purple-400' : 'text-slate-400'}`}>
+              {isSecond ? 'Second Pledges' : 'Jeweller Management'}
+            </p>
           </div>
         </div>
       </div>
@@ -47,7 +56,9 @@ export default function Sidebar() {
               className={`
                 flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200
                 ${isActive 
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
+                  ? isSecond
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                    : 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }
               `}

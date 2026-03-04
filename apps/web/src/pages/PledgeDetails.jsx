@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import { usePledgeStore } from '../store/pledgeStore'
+import { usePledgeStoreSecond } from '../store/pledgeStoreSecond'
+import { useCategoryStore } from '../store/categoryStore'
 import { downloadPledgePDF } from '../lib/pdfGenerator'
 import Header from '../components/Header'
 import AddAmountModal from '../components/AddAmountModal'
@@ -22,6 +24,7 @@ export default function PledgeDetails() {
   const { id } = useParams()
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  const { activeCategory } = useCategoryStore()
   
   const [showCloseModal, setShowCloseModal] = useState(false)
   const [showJustCloseModal, setShowJustCloseModal] = useState(false)
@@ -38,6 +41,11 @@ export default function PledgeDetails() {
   const [returnAmount, setReturnAmount] = useState('')
   const [isReturning, setIsReturning] = useState(false)
 
+  // Use appropriate store based on category
+  const storeFirst = usePledgeStore()
+  const storeSecond = usePledgeStoreSecond()
+  const store = activeCategory === 'FIRST' ? storeFirst : storeSecond
+
   const { 
     currentPledge, 
     isLoading, 
@@ -51,7 +59,7 @@ export default function PledgeDetails() {
     createOwnerRepledge,
     closeOwnerRepledge,
     clearCurrentPledge 
-  } = usePledgeStore()
+  } = store
 
   useEffect(() => {
     if (id) fetchPledgeById(id)
@@ -219,10 +227,11 @@ export default function PledgeDetails() {
   const wasReturned = currentPledge?.return_pledge_id || currentPledge?.return_pledge_no
 
   const getJewelTypeColor = (jewelType) => {
+    const isFirst = activeCategory === 'FIRST'
     switch (jewelType) {
       case 'GOLD': return 'bg-amber-50 text-amber-700 border border-amber-200'
       case 'SILVER': return 'bg-slate-50 text-slate-600 border border-slate-200'
-      case 'MIXED': return 'bg-blue-50 text-blue-600 border border-blue-200'
+      case 'MIXED': return isFirst ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-purple-50 text-purple-600 border border-purple-200'
       default: return 'bg-amber-50 text-amber-700 border border-amber-200'
     }
   }
@@ -236,18 +245,20 @@ export default function PledgeDetails() {
     }
   }
 
+  const isFirst = activeCategory === 'FIRST'
+
   if (isLoading || !currentPledge) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-blue-50">
-        <div className="w-10 h-10 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className={`min-h-screen flex items-center justify-center ${isFirst ? 'bg-blue-50' : 'bg-purple-50'}`}>
+        <div className={`w-10 h-10 border-3 ${isFirst ? 'border-blue-600' : 'border-purple-600'} border-t-transparent rounded-full animate-spin`}></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-blue-50 pb-20">
+    <div className={`min-h-screen ${isFirst ? 'bg-blue-50' : 'bg-purple-50'} pb-20`}>
       {/* Custom Header */}
-      <div className="bg-blue-50 border-b border-blue-200/50">
+      <div className={`${isFirst ? 'bg-blue-50 border-blue-200/50' : 'bg-purple-50 border-purple-200/50'} border-b`}>
         <div className="px-4 py-4">
           <div className="flex items-center gap-3">
             <button 
@@ -258,7 +269,7 @@ export default function PledgeDetails() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/25">
+            <div className={`w-10 h-10 ${isFirst ? 'bg-gradient-to-br from-blue-600 to-blue-500 shadow-blue-500/25' : 'bg-gradient-to-br from-purple-600 to-purple-500 shadow-purple-500/25'} rounded-xl flex items-center justify-center shadow-md`}>
               <FileText className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
@@ -282,7 +293,7 @@ export default function PledgeDetails() {
               </span>
               {/* Show Returned badge for closed pledges that were returned */}
               {currentPledge.status === 'CLOSED' && wasReturned && (
-                <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-500 text-white">
+                <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${isFirst ? 'bg-blue-500' : 'bg-purple-500'} text-white`}>
                   {t('pledge.returned')}
                 </span>
               )}
@@ -302,8 +313,8 @@ export default function PledgeDetails() {
         {/* Customer Details Card */}
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
           <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <User className="w-4 h-4 text-blue-600" />
+            <div className={`w-8 h-8 ${isFirst ? 'bg-blue-100' : 'bg-purple-100'} rounded-lg flex items-center justify-center`}>
+              <User className={`w-4 h-4 ${isFirst ? 'text-blue-600' : 'text-purple-600'}`} />
             </div>
             {t('pledge.customerDetails')}
           </h3>
@@ -332,8 +343,8 @@ export default function PledgeDetails() {
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Gem className="w-4 h-4 text-blue-600" />
+              <div className={`w-8 h-8 ${isFirst ? 'bg-blue-100' : 'bg-purple-100'} rounded-lg flex items-center justify-center`}>
+                <Gem className={`w-4 h-4 ${isFirst ? 'text-blue-600' : 'text-purple-600'}`} />
               </div>
               {t('pledge.jewelsDetails')}
             </h3>
@@ -355,9 +366,9 @@ export default function PledgeDetails() {
               <p className="text-[10px] text-slate-400 uppercase font-semibold mb-1">{t('pledge.grossWeight')}</p>
               <p className="font-bold text-slate-800 text-lg">{currentPledge.gross_weight || 0}g</p>
             </div>
-            <div className="bg-blue-50 rounded-xl p-3 text-center">
-              <p className="text-[10px] text-blue-400 uppercase font-semibold mb-1">{t('pledge.netWeight')}</p>
-              <p className="font-bold text-blue-600 text-lg">{currentPledge.net_weight || 0}g</p>
+            <div className={`${isFirst ? 'bg-blue-50' : 'bg-purple-50'} rounded-xl p-3 text-center`}>
+              <p className={`text-[10px] ${isFirst ? 'text-blue-400' : 'text-purple-400'} uppercase font-semibold mb-1`}>{t('pledge.netWeight')}</p>
+              <p className={`font-bold ${isFirst ? 'text-blue-600' : 'text-purple-600'} text-lg`}>{currentPledge.net_weight || 0}g</p>
             </div>
           </div>
         </div>
@@ -383,7 +394,7 @@ export default function PledgeDetails() {
                 <div key={amt.id || index} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                   <div className="flex justify-between items-center mb-3">
                     <span className={`text-xs px-3 py-1 rounded-full font-bold ${
-                      amt.amount_type === 'INITIAL' ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'
+                      amt.amount_type === 'INITIAL' ? 'bg-emerald-500 text-white' : isFirst ? 'bg-blue-500 text-white' : 'bg-purple-500 text-white'
                     }`}>
                       {amt.amount_type === 'INITIAL' ? t('pledge.initial') : t('pledge.additional')}
                     </span>
@@ -396,7 +407,7 @@ export default function PledgeDetails() {
                     </div>
                     <div className="bg-white rounded-lg p-2">
                       <span className="text-slate-400 text-xs">{t('pledge.rate')}</span>
-                      <p className="font-bold text-blue-600">{amt.interest_rate}%</p>
+                      <p className={`font-bold ${isFirst ? 'text-blue-600' : 'text-purple-600'}`}>{amt.interest_rate}%</p>
                     </div>
                     <div className="bg-white rounded-lg p-2">
                       <span className="text-slate-400 text-xs">{t('pledge.months')}</span>
@@ -419,7 +430,7 @@ export default function PledgeDetails() {
         </div>
 
         {/* Total Summary Card */}
-        <div className="bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl p-5 text-white shadow-lg shadow-blue-500/30">
+        <div className={`${isFirst ? 'bg-gradient-to-br from-blue-600 to-blue-500 shadow-blue-500/30' : 'bg-gradient-to-br from-purple-600 to-purple-500 shadow-purple-500/30'} rounded-2xl p-5 text-white shadow-lg`}>
           <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
             <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
               <Wallet className="w-4 h-4 text-white" />
@@ -464,11 +475,11 @@ export default function PledgeDetails() {
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
           <button 
             onClick={() => setShowOwnerRepledgeHistory(!showOwnerRepledgeHistory)}
-            className="w-full p-4 flex justify-between items-center bg-blue-50"
+            className={`w-full p-4 flex justify-between items-center ${isFirst ? 'bg-blue-50' : 'bg-purple-50'}`}
           >
-            <h3 className="font-bold text-blue-800 text-sm flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Landmark className="w-4 h-4 text-blue-600" />
+            <h3 className={`font-bold ${isFirst ? 'text-blue-800' : 'text-purple-800'} text-sm flex items-center gap-2`}>
+              <div className={`w-8 h-8 ${isFirst ? 'bg-blue-100' : 'bg-purple-100'} rounded-lg flex items-center justify-center`}>
+                <Landmark className={`w-4 h-4 ${isFirst ? 'text-blue-600' : 'text-purple-600'}`} />
               </div>
               {t('ownerRepledge.sectionTitle')}
             </h3>
@@ -481,13 +492,13 @@ export default function PledgeDetails() {
                     e.stopPropagation()
                     setShowOwnerRepledgeModal(true)
                   }}
-                  className="px-4 py-2 text-xs bg-blue-600 text-white rounded-xl hover:bg-blue-700 flex items-center gap-1.5 font-bold shadow-sm"
+                  className={`px-4 py-2 text-xs ${isFirst ? 'bg-blue-600 hover:bg-blue-700' : 'bg-purple-600 hover:bg-purple-700'} text-white rounded-xl flex items-center gap-1.5 font-bold shadow-sm`}
                 >
                   <Plus className="w-3.5 h-3.5" />
                   {t('ownerRepledge.add')}
                 </button>
               )}
-              {showOwnerRepledgeHistory ? <ChevronUp className="w-5 h-5 text-blue-400" /> : <ChevronDown className="w-5 h-5 text-blue-400" />}
+              {showOwnerRepledgeHistory ? <ChevronUp className={`w-5 h-5 ${isFirst ? 'text-blue-400' : 'text-purple-400'}`} /> : <ChevronDown className={`w-5 h-5 ${isFirst ? 'text-blue-400' : 'text-purple-400'}`} />}
             </div>
           </button>
           
@@ -496,7 +507,7 @@ export default function PledgeDetails() {
               {currentPledge.ownerRepledges && currentPledge.ownerRepledges.length > 0 ? (
                 currentPledge.ownerRepledges.map((or, index) => {
                   return (
-                    <div key={or.id || index} className={`rounded-xl p-4 border ${or.status === 'ACTIVE' ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-200'}`}>
+                    <div key={or.id || index} className={`rounded-xl p-4 border ${or.status === 'ACTIVE' ? (isFirst ? 'bg-blue-50 border-blue-200' : 'bg-purple-50 border-purple-200') : 'bg-slate-50 border-slate-200'}`}>
                       <div className="flex justify-between items-start mb-3">
                         <div>
                           <span className="font-bold text-slate-800">{or.financer_name}</span>
@@ -570,20 +581,20 @@ export default function PledgeDetails() {
 
         {/* Return Pledge Reference (if this pledge was returned/re-pledged to new pledge) */}
         {currentPledge.return_pledge_no && (
-          <div className="bg-blue-50 rounded-2xl border border-blue-200 p-4">
+          <div className={`${isFirst ? 'bg-blue-50 border-blue-200' : 'bg-purple-50 border-purple-200'} rounded-2xl border p-4`}>
             <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <ArrowRight className="w-4 h-4 text-blue-600" />
+              <div className={`w-8 h-8 ${isFirst ? 'bg-blue-100' : 'bg-purple-100'} rounded-lg flex items-center justify-center`}>
+                <ArrowRight className={`w-4 h-4 ${isFirst ? 'text-blue-600' : 'text-purple-600'}`} />
               </div>
               {t('pledge.returnPledgeReference')}
             </h3>
-            <p className="text-sm text-blue-700 bg-white rounded-xl p-3">
+            <p className={`text-sm ${isFirst ? 'text-blue-700' : 'text-purple-700'} bg-white rounded-xl p-3`}>
               {t('pledge.continuedTo')}: <span className="font-bold">{currentPledge.return_pledge_no}</span>
             </p>
             {currentPledge.return_pledge_id && (
               <button
                 onClick={() => navigate(`/pledge/${currentPledge.return_pledge_id}`)}
-                className="mt-3 text-xs text-blue-600 hover:text-blue-700 font-bold"
+                className={`mt-3 text-xs ${isFirst ? 'text-blue-600 hover:text-blue-700' : 'text-purple-600 hover:text-purple-700'} font-bold`}
               >
                 {t('pledge.viewReturnPledge')} →
               </button>
@@ -595,15 +606,15 @@ export default function PledgeDetails() {
         {currentPledge.repledges && currentPledge.repledges.length > 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
             <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <UserPlus className="w-4 h-4 text-blue-600" />
+              <div className={`w-8 h-8 ${isFirst ? 'bg-blue-100' : 'bg-purple-100'} rounded-lg flex items-center justify-center`}>
+                <UserPlus className={`w-4 h-4 ${isFirst ? 'text-blue-600' : 'text-purple-600'}`} />
               </div>
               {t('pledge.repledgeHistory')}
             </h3>
             {currentPledge.repledges.map((repledge, index) => (
-              <div key={repledge.id || index} className="bg-blue-50 rounded-xl p-4 mb-3 border border-blue-100">
+              <div key={repledge.id || index} className={`${isFirst ? 'bg-blue-50 border-blue-100' : 'bg-purple-50 border-purple-100'} rounded-xl p-4 mb-3 border`}>
                 <div className="flex justify-between items-start mb-3">
-                  <span className="font-bold text-blue-700">{repledge.new_customer_name}</span>
+                  <span className={`font-bold ${isFirst ? 'text-blue-700' : 'text-purple-700'}`}>{repledge.new_customer_name}</span>
                   <span className="text-xs text-slate-500 font-medium">{formatDate(repledge.date)}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
@@ -613,7 +624,7 @@ export default function PledgeDetails() {
                   </div>
                   <div className="bg-white rounded-lg p-2">
                     <span className="text-slate-400 text-xs">{t('pledge.rate')}</span>
-                    <p className="font-bold text-blue-600">{repledge.interest_rate}%</p>
+                    <p className={`font-bold ${isFirst ? 'text-blue-600' : 'text-purple-600'}`}>{repledge.interest_rate}%</p>
                   </div>
                 </div>
                 {repledge.notes && (
@@ -644,7 +655,7 @@ export default function PledgeDetails() {
             <div className="flex gap-2">
               <button 
                 onClick={() => navigate(`/edit/${id}`)}
-                className="flex-1 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 text-sm font-bold transition-all"
+                className={`flex-1 h-11 rounded-xl ${isFirst ? 'bg-blue-600 hover:bg-blue-700' : 'bg-purple-600 hover:bg-purple-700'} text-white flex items-center justify-center gap-2 text-sm font-bold transition-all`}
               >
                 <Edit2 className="w-4 h-4" />
                 Edit
@@ -656,7 +667,7 @@ export default function PledgeDetails() {
                 <RefreshCw className="w-4 h-4" />
                 Return
               </button>
-              <button 
+              <button
                 onClick={() => setShowJustCloseModal(true)}
                 className="flex-1 h-11 rounded-xl bg-slate-500 hover:bg-slate-600 text-white flex items-center justify-center gap-2 text-sm font-bold transition-all"
               >
@@ -688,9 +699,9 @@ export default function PledgeDetails() {
             <p className="text-gray-600 text-sm mb-4">This will close current pledge and create a new one with the same customer details.</p>
             
             {/* Current Pledge Info */}
-            <div className="bg-blue-50 rounded-lg p-3 mb-4 text-sm">
-              <p className="font-medium text-blue-800">Current: {currentPledge?.pledge_no}</p>
-              <p className="text-blue-600">Customer: {currentPledge?.customer_name}</p>
+            <div className={`${isFirst ? 'bg-blue-50' : 'bg-purple-50'} rounded-lg p-3 mb-4 text-sm`}>
+              <p className={`font-medium ${isFirst ? 'text-blue-800' : 'text-purple-800'}`}>Current: {currentPledge?.pledge_no}</p>
+              <p className={`${isFirst ? 'text-blue-600' : 'text-purple-600'}`}>Customer: {currentPledge?.customer_name}</p>
             </div>
             
             {/* New Pledge Number */}
@@ -701,7 +712,7 @@ export default function PledgeDetails() {
                 value={returnPledgeNo}
                 onChange={(e) => setReturnPledgeNo(e.target.value)}
                 placeholder="Enter new pledge number"
-                className="w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"
+                className={`w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-gray-900 ${isFirst ? 'focus:border-blue-600 focus:ring-blue-600' : 'focus:border-purple-600 focus:ring-purple-600'} focus:ring-1 outline-none`}
               />
             </div>
 
@@ -713,7 +724,7 @@ export default function PledgeDetails() {
                 value={returnAmount}
                 onChange={(e) => setReturnAmount(e.target.value)}
                 placeholder="Enter loan amount"
-                className="w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"
+                className={`w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-gray-900 ${isFirst ? 'focus:border-blue-600 focus:ring-blue-600' : 'focus:border-purple-600 focus:ring-purple-600'} focus:ring-1 outline-none`}
               />
             </div>
 
@@ -723,7 +734,7 @@ export default function PledgeDetails() {
               <DateInput
                 value={canceledDate}
                 onChange={(e) => setCanceledDate(e.target.value)}
-                className="w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"
+                className={`w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-gray-900 ${isFirst ? 'focus:border-blue-600 focus:ring-blue-600' : 'focus:border-purple-600 focus:ring-purple-600'} focus:ring-1 outline-none`}
               />
             </div>
 
@@ -742,7 +753,7 @@ export default function PledgeDetails() {
               <button 
                 onClick={handleClosePledge}
                 disabled={!returnPledgeNo.trim() || !returnAmount || isReturning}
-                className="flex-1 h-10 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className={`flex-1 h-10 rounded-lg ${isFirst ? 'bg-blue-500 hover:bg-blue-600' : 'bg-purple-500 hover:bg-purple-600'} text-white font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
               >
                 {isReturning ? (
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>

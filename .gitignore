@@ -27,6 +27,13 @@ out/
 build
 dist
 
+# Electron builds
+electron-dist/
+android-build/
+*.apk
+*.exe
+*.asar
+
 
 # Debug
 npm-debug.log*

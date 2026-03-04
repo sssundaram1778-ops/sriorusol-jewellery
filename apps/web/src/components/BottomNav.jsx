@@ -1,8 +1,11 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { Home, Plus, Search, Landmark, Settings } from 'lucide-react'
+import { useCategoryStore } from '../store/categoryStore'
 
 export default function BottomNav() {
   const location = useLocation()
+  const { activeCategory } = useCategoryStore()
+  const isFirst = activeCategory === 'FIRST'
 
   // Clean 5-item navigation - no more menu needed
   const navItems = [
@@ -30,8 +33,10 @@ export default function BottomNav() {
                   w-14 h-14 rounded-full flex items-center justify-center shadow-lg
                   transition-all duration-200 active:scale-95
                   ${isActive 
-                    ? 'bg-blue-700 shadow-blue-700/30' 
-                    : 'bg-gradient-to-br from-blue-600 to-blue-700 shadow-blue-600/25'
+                    ? isFirst ? 'bg-blue-700 shadow-blue-700/30' : 'bg-purple-700 shadow-purple-700/30'
+                    : isFirst 
+                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 shadow-blue-600/25' 
+                      : 'bg-gradient-to-br from-purple-600 to-purple-700 shadow-purple-600/25'
                   }
                 `}>
                   <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
@@ -48,11 +53,11 @@ export default function BottomNav() {
             >
               <div className={`
                 p-2 rounded-xl transition-all duration-200
-                ${isActive ? 'bg-blue-50' : 'group-active:bg-gray-100'}
+                ${isActive ? (isFirst ? 'bg-blue-50' : 'bg-purple-50') : 'group-active:bg-gray-100'}
               `}>
-                <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
+                <Icon className={`w-5 h-5 transition-colors ${isActive ? (isFirst ? 'text-blue-600' : 'text-purple-600') : 'text-gray-400'}`} />
               </div>
-              <span className={`text-[10px] mt-1 font-medium transition-colors ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
+              <span className={`text-[10px] mt-1 font-medium transition-colors ${isActive ? (isFirst ? 'text-blue-600' : 'text-purple-600') : 'text-gray-400'}`}>
                 {label}
               </span>
             </NavLink>

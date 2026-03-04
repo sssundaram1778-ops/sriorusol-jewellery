@@ -6,8 +6,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
 import { usePledgeStore } from '../store/pledgeStore'
+import { usePledgeStoreSecond } from '../store/pledgeStoreSecond'
+import { useCategoryStore } from '../store/categoryStore'
 import { Save, X, ChevronLeft, User, Gem, Wallet } from 'lucide-react'
 import DateInput from '../components/DateInput'
+import CategoryBadge from '../components/CategoryBadge'
 
 const pledgeSchema = z.object({
   pledge_no: z.string().min(1, 'Pledge number is required'),
@@ -27,7 +30,14 @@ const pledgeSchema = z.object({
 export default function NewPledge() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { createPledge } = usePledgeStore()
+  const { activeCategory } = useCategoryStore()
+  
+  // Use appropriate store based on category
+  const storeFirst = usePledgeStore()
+  const storeSecond = usePledgeStoreSecond()
+  const { createPledge } = activeCategory === 'FIRST' ? storeFirst : storeSecond
+  const isFirst = activeCategory === 'FIRST'
+  
   const [submitting, setSubmitting] = useState(false)
   const [selectedJewelType, setSelectedJewelType] = useState('GOLD')
 
@@ -76,13 +86,13 @@ export default function NewPledge() {
   const jewelTypes = [
     { type: 'GOLD', label: 'Gold', rate: '2%', bg: 'bg-amber-500', activeBg: 'bg-amber-600', icon: '🥇' },
     { type: 'SILVER', label: 'Silver', rate: '3%', bg: 'bg-slate-400', activeBg: 'bg-slate-500', icon: '🥈' },
-    { type: 'MIXED', label: 'Mixed', rate: 'Custom', bg: 'bg-blue-500', activeBg: 'bg-blue-600', icon: '💎' }
+    { type: 'MIXED', label: 'Mixed', rate: 'Custom', bg: isFirst ? 'bg-blue-500' : 'bg-purple-500', activeBg: isFirst ? 'bg-blue-600' : 'bg-purple-600', icon: '💎' }
   ]
 
   return (
-    <div className="min-h-screen bg-blue-50 pb-24">
+    <div className={`min-h-screen ${isFirst ? 'bg-blue-50' : 'bg-purple-50'} pb-24`}>
       {/* Header */}
-      <div className="bg-blue-50 border-b border-blue-200/50">
+      <div className={`${isFirst ? 'bg-blue-50 border-blue-200/50' : 'bg-purple-50 border-purple-200/50'} border-b`}>
         <div className="px-4 py-3 flex items-center gap-3">
           <button 
             onClick={() => navigate(-1)}
@@ -91,10 +101,13 @@ export default function NewPledge() {
             <ChevronLeft className="w-5 h-5 text-slate-600" />
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/25">
+            <div className={`w-9 h-9 ${isFirst ? 'bg-gradient-to-br from-blue-600 to-blue-500 shadow-blue-500/25' : 'bg-gradient-to-br from-purple-600 to-purple-500 shadow-purple-500/25'} rounded-xl flex items-center justify-center shadow-md`}>
               <Save className="w-4 h-4 text-white" />
             </div>
-            <h1 className="text-lg font-bold text-slate-800">{t('pledge.createNew')}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-slate-800">{t('pledge.createNew')}</h1>
+              <CategoryBadge showLabel={false} />
+            </div>
           </div>
         </div>
       </div>
@@ -103,7 +116,7 @@ export default function NewPledge() {
         {/* Section: Customer Info */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
+            <div className={`w-10 h-10 rounded-xl ${isFirst ? 'bg-gradient-to-br from-blue-500 to-blue-600' : 'bg-gradient-to-br from-purple-500 to-purple-600'} flex items-center justify-center shadow-sm`}>
               <User className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -119,7 +132,7 @@ export default function NewPledge() {
                 type="text"
                 {...register('pledge_no')}
                 placeholder="Enter pledge number"
-                className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-gray-400 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 outline-none transition-all text-sm font-semibold"
+                className={`w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-gray-400 focus:bg-white ${isFirst ? 'focus:border-blue-600 focus:ring-blue-600/10' : 'focus:border-purple-600 focus:ring-purple-600/10'} focus:ring-2 outline-none transition-all text-sm font-semibold`}
               />
               {errors.pledge_no && <span className="text-red-500 text-xs mt-1.5 block">{errors.pledge_no.message}</span>}
             </div>
@@ -131,7 +144,7 @@ export default function NewPledge() {
                   type="text"
                   {...register('customer_name')}
                   placeholder="Enter customer name"
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-gray-400 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 outline-none transition-all text-sm"
+                  className={`w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-gray-400 focus:bg-white ${isFirst ? 'focus:border-blue-600 focus:ring-blue-600/10' : 'focus:border-purple-600 focus:ring-purple-600/10'} focus:ring-2 outline-none transition-all text-sm`}
                 />
                 {errors.customer_name && <span className="text-red-500 text-xs mt-1.5 block">{errors.customer_name.message}</span>}
               </div>
@@ -141,7 +154,7 @@ export default function NewPledge() {
                   type="tel"
                   {...register('phone_number')}
                   placeholder="Enter phone number"
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-gray-400 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 outline-none transition-all text-sm"
+                  className={`w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-gray-400 focus:bg-white ${isFirst ? 'focus:border-blue-600 focus:ring-blue-600/10' : 'focus:border-purple-600 focus:ring-purple-600/10'} focus:ring-2 outline-none transition-all text-sm`}
                 />
               </div>
             </div>
@@ -152,7 +165,7 @@ export default function NewPledge() {
                 <DateInput
                   value={watch('date')}
                   onChange={(e) => setValue('date', e.target.value)}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all text-sm"
+                  className={`w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white ${isFirst ? 'focus:border-blue-500 focus:ring-blue-500/10' : 'focus:border-purple-500 focus:ring-purple-500/10'} focus:ring-2 outline-none transition-all text-sm`}
                 />
               </div>
               <div>
@@ -161,7 +174,7 @@ export default function NewPledge() {
                   type="text"
                   {...register('place')}
                   placeholder="Location"
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-gray-400 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 outline-none transition-all text-sm"
+                  className={`w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-gray-400 focus:bg-white ${isFirst ? 'focus:border-blue-600 focus:ring-blue-600/10' : 'focus:border-purple-600 focus:ring-purple-600/10'} focus:ring-2 outline-none transition-all text-sm`}
                 />
               </div>
             </div>
@@ -171,7 +184,7 @@ export default function NewPledge() {
         {/* Section: Jewel Type */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
+            <div className={`w-10 h-10 rounded-xl ${isFirst ? 'bg-gradient-to-br from-blue-500 to-blue-600' : 'bg-gradient-to-br from-purple-500 to-purple-600'} flex items-center justify-center shadow-sm`}>
               <Gem className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -209,7 +222,7 @@ export default function NewPledge() {
                 {...register('jewels_details')}
                 placeholder="Chain, Ring, Bangle..."
                 rows={2}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-gray-400 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 outline-none transition-all resize-none text-sm"
+                className={`w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-gray-400 focus:bg-white ${isFirst ? 'focus:border-blue-600 focus:ring-blue-600/10' : 'focus:border-purple-600 focus:ring-purple-600/10'} focus:ring-2 outline-none transition-all resize-none text-sm`}
               />
             </div>
 
@@ -220,7 +233,7 @@ export default function NewPledge() {
                   type="number"
                   {...register('no_of_items', { valueAsNumber: true })}
                   min="1"
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center font-semibold tabular-nums focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 outline-none transition-all"
+                  className={`w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center font-semibold tabular-nums focus:bg-white ${isFirst ? 'focus:border-blue-600 focus:ring-blue-600/10' : 'focus:border-purple-600 focus:ring-purple-600/10'} focus:ring-2 outline-none transition-all`}
                 />
               </div>
               <div>
@@ -230,7 +243,7 @@ export default function NewPledge() {
                   step="0.001"
                   {...register('gross_weight', { valueAsNumber: true })}
                   placeholder="0.000"
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center tabular-nums placeholder-gray-400 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 outline-none transition-all"
+                  className={`w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center tabular-nums placeholder-gray-400 focus:bg-white ${isFirst ? 'focus:border-blue-600 focus:ring-blue-600/10' : 'focus:border-purple-600 focus:ring-purple-600/10'} focus:ring-2 outline-none transition-all`}
                 />
               </div>
               <div>
@@ -240,7 +253,7 @@ export default function NewPledge() {
                   step="0.001"
                   {...register('net_weight', { valueAsNumber: true })}
                   placeholder="0.000"
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center tabular-nums placeholder-gray-400 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 outline-none transition-all"
+                  className={`w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center tabular-nums placeholder-gray-400 focus:bg-white ${isFirst ? 'focus:border-blue-600 focus:ring-blue-600/10' : 'focus:border-purple-600 focus:ring-purple-600/10'} focus:ring-2 outline-none transition-all`}
                 />
               </div>
             </div>
@@ -263,12 +276,12 @@ export default function NewPledge() {
             <div>
               <label className="text-sm font-semibold text-slate-700 mb-2 block">{t('pledge.loanAmount')} <span className="text-red-500">*</span></label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 font-bold text-xl">₹</span>
+                <span className={`absolute left-4 top-1/2 -translate-y-1/2 ${isFirst ? 'text-blue-600' : 'text-purple-600'} font-bold text-xl`}>₹</span>
                 <input
                   type="number"
                   {...register('initialAmount', { valueAsNumber: true })}
                   placeholder="0"
-                  className="w-full h-16 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-2xl font-bold placeholder-gray-300 tabular-nums focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 outline-none transition-all"
+                  className={`w-full h-16 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-2xl font-bold placeholder-gray-300 tabular-nums focus:bg-white ${isFirst ? 'focus:border-blue-600 focus:ring-blue-600/10' : 'focus:border-purple-600 focus:ring-purple-600/10'} focus:ring-2 outline-none transition-all`}
                 />
               </div>
               {errors.initialAmount && <span className="text-red-500 text-xs mt-1.5 block">{errors.initialAmount.message}</span>}
@@ -281,7 +294,7 @@ export default function NewPledge() {
                   type="number"
                   step="0.1"
                   {...register('interest_rate', { valueAsNumber: true })}
-                  className="w-full h-12 px-4 pr-24 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold tabular-nums focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 outline-none transition-all"
+                  className={`w-full h-12 px-4 pr-24 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold tabular-nums focus:bg-white ${isFirst ? 'focus:border-blue-600 focus:ring-blue-600/10' : 'focus:border-purple-600 focus:ring-purple-600/10'} focus:ring-2 outline-none transition-all`}
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-sm">% / month</span>
               </div>
@@ -302,7 +315,7 @@ export default function NewPledge() {
           </button>
           <button
             type="submit"
-            className="flex-1 h-13 py-3.5 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white flex items-center justify-center gap-2 transition-all active:scale-[0.99] shadow-lg shadow-blue-600/25 disabled:opacity-50"
+            className={`flex-1 h-13 py-3.5 rounded-xl font-semibold ${isFirst ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-600/25' : 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-purple-600/25'} text-white flex items-center justify-center gap-2 transition-all active:scale-[0.99] shadow-lg disabled:opacity-50`}
             disabled={submitting}
           >
             {submitting ? (

@@ -6,6 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
 import { usePledgeStore } from '../store/pledgeStore'
+import { usePledgeStoreSecond } from '../store/pledgeStoreSecond'
+import { useCategoryStore } from '../store/categoryStore'
 import { Save, X, CircleDot, ChevronLeft, Edit2 } from 'lucide-react'
 import DateInput from '../components/DateInput'
 
@@ -26,7 +28,15 @@ export default function EditPledge() {
   const { id } = useParams()
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { currentPledge, fetchPledgeById, updatePledge, isLoading, clearCurrentPledge } = usePledgeStore()
+  const { activeCategory } = useCategoryStore()
+  const isFirst = activeCategory === 'FIRST'
+  
+  // Use appropriate store based on category
+  const storeFirst = usePledgeStore()
+  const storeSecond = usePledgeStoreSecond()
+  const { currentPledge, fetchPledgeById, updatePledge, isLoading, clearCurrentPledge } = 
+    activeCategory === 'FIRST' ? storeFirst : storeSecond
+    
   const [submitting, setSubmitting] = useState(false)
   const [selectedJewelType, setSelectedJewelType] = useState('GOLD')
 
@@ -100,16 +110,16 @@ export default function EditPledge() {
 
   if (isLoading || !currentPledge) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg text-blue-600"></span>
+      <div className={`min-h-screen flex items-center justify-center ${isFirst ? 'bg-blue-50' : 'bg-purple-50'}`}>
+        <span className={`loading loading-spinner loading-lg ${isFirst ? 'text-blue-600' : 'text-purple-600'}`}></span>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-blue-50 pb-24">
+    <div className={`min-h-screen ${isFirst ? 'bg-blue-50' : 'bg-purple-50'} pb-24`}>
       {/* Header */}
-      <div className="bg-blue-50 border-b border-blue-200/50">
+      <div className={`${isFirst ? 'bg-blue-50 border-blue-200/50' : 'bg-purple-50 border-purple-200/50'} border-b`}>
         <div className="px-4 py-3 flex items-center gap-3">
           <button 
             onClick={() => navigate(-1)}
@@ -118,7 +128,7 @@ export default function EditPledge() {
             <ChevronLeft className="w-5 h-5 text-slate-600" />
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/25">
+            <div className={`w-9 h-9 ${isFirst ? 'bg-gradient-to-br from-blue-600 to-blue-500 shadow-blue-500/25' : 'bg-gradient-to-br from-purple-600 to-purple-500 shadow-purple-500/25'} rounded-xl flex items-center justify-center shadow-md`}>
               <Edit2 className="w-4 h-4 text-white" />
             </div>
             <h1 className="text-lg font-bold text-slate-800">{t('pledge.editPledge')}</h1>
@@ -148,7 +158,7 @@ export default function EditPledge() {
           <DateInput
             value={watch('date')}
             onChange={(e) => setValue('date', e.target.value)}
-            className="input input-bordered w-full focus:border-blue-600"
+            className={`input input-bordered w-full ${isFirst ? 'focus:border-blue-600' : 'focus:border-purple-600'}`}
           />
           {errors.date && <span className="text-error text-sm mt-1">{errors.date.message}</span>}
         </div>
@@ -163,7 +173,7 @@ export default function EditPledge() {
               type="text"
               {...register('customer_name')}
               placeholder={t('pledge.enterCustomerName')}
-              className="input input-bordered w-full focus:border-blue-600"
+              className={`input input-bordered w-full ${isFirst ? 'focus:border-blue-600' : 'focus:border-purple-600'}`}
             />
             {errors.customer_name && <span className="text-error text-sm mt-1">{errors.customer_name.message}</span>}
           </div>
@@ -175,7 +185,7 @@ export default function EditPledge() {
               type="tel"
               {...register('phone_number')}
               placeholder="Enter phone number"
-              className="input input-bordered w-full focus:border-blue-600"
+              className={`input input-bordered w-full ${isFirst ? 'focus:border-blue-600' : 'focus:border-purple-600'}`}
             />
           </div>
         </div>
@@ -189,7 +199,7 @@ export default function EditPledge() {
             type="text"
             {...register('place')}
             placeholder={t('pledge.enterPlace')}
-            className="input input-bordered w-full focus:border-blue-600"
+            className={`input input-bordered w-full ${isFirst ? 'focus:border-blue-600' : 'focus:border-purple-600'}`}
           />
         </div>
 
@@ -204,8 +214,12 @@ export default function EditPledge() {
               onClick={() => handleJewelTypeChange('GOLD')}
               className={`flex-1 btn btn-sm h-12 ${
                 selectedJewelType === 'GOLD'
-                  ? 'bg-blue-600 text-white border-none hover:bg-blue-700'
-                  : 'btn-outline border-blue-600 text-blue-600'
+                  ? isFirst 
+                    ? 'bg-blue-600 text-white border-none hover:bg-blue-700'
+                    : 'bg-purple-600 text-white border-none hover:bg-purple-700'
+                  : isFirst 
+                    ? 'btn-outline border-blue-600 text-blue-600'
+                    : 'btn-outline border-purple-600 text-purple-600'
               }`}
             >
               <CircleDot className="w-4 h-4" />
@@ -228,8 +242,12 @@ export default function EditPledge() {
               onClick={() => handleJewelTypeChange('MIXED')}
               className={`flex-1 btn btn-sm h-12 ${
                 selectedJewelType === 'MIXED'
-                  ? 'bg-blue-500 text-white border-none hover:bg-blue-600'
-                  : 'btn-outline border-blue-400 text-blue-600'
+                  ? isFirst 
+                    ? 'bg-blue-500 text-white border-none hover:bg-blue-600'
+                    : 'bg-purple-500 text-white border-none hover:bg-purple-600'
+                  : isFirst 
+                    ? 'btn-outline border-blue-400 text-blue-600'
+                    : 'btn-outline border-purple-400 text-purple-600'
               }`}
             >
               <CircleDot className="w-4 h-4" />
@@ -269,7 +287,7 @@ export default function EditPledge() {
           <textarea
             {...register('jewels_details')}
             placeholder={t('pledge.enterJewelsDetails')}
-            className="textarea textarea-bordered w-full h-24 focus:border-blue-600"
+            className={`textarea textarea-bordered w-full h-24 ${isFirst ? 'focus:border-blue-600' : 'focus:border-purple-600'}`}
           />
         </div>
 
@@ -282,7 +300,7 @@ export default function EditPledge() {
             type="number"
             {...register('no_of_items', { valueAsNumber: true })}
             min="1"
-            className="input input-bordered w-full focus:border-blue-600"
+            className={`input input-bordered w-full ${isFirst ? 'focus:border-blue-600' : 'focus:border-purple-600'}`}
           />
         </div>
 
@@ -298,7 +316,7 @@ export default function EditPledge() {
                 step="0.001"
                 {...register('gross_weight', { valueAsNumber: true })}
                 placeholder="0.000"
-                className="input input-bordered w-full pr-8 focus:border-blue-600"
+                className={`input input-bordered w-full pr-8 ${isFirst ? 'focus:border-blue-600' : 'focus:border-purple-600'}`}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">g</span>
             </div>
@@ -313,7 +331,7 @@ export default function EditPledge() {
                 step="0.001"
                 {...register('net_weight', { valueAsNumber: true })}
                 placeholder="0.000"
-                className="input input-bordered w-full pr-8 focus:border-blue-600"
+                className={`input input-bordered w-full pr-8 ${isFirst ? 'focus:border-blue-600' : 'focus:border-purple-600'}`}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">g</span>
             </div>
@@ -333,7 +351,7 @@ export default function EditPledge() {
           </button>
           <button
             type="submit"
-            className="btn bg-blue-600 hover:bg-blue-700 text-white border-none flex-1"
+            className={`btn ${isFirst ? 'bg-blue-600 hover:bg-blue-700' : 'bg-purple-600 hover:bg-purple-700'} text-white border-none flex-1`}
             disabled={submitting}
           >
             {submitting ? (

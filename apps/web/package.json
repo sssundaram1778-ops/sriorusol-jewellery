@@ -3,13 +3,22 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
+  "main": "electron/main.cjs",
+  "author": "Sri Orusol Jeweller",
+  "description": "Rental Jewels Management System - ஸ்ரீ ஒருசோல் நகை கடை",
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext js,jsx"
+    "lint": "eslint . --ext js,jsx",
+    "electron:dev": "npm run build && electron .",
+    "electron:build": "npm run build && electron-builder --win portable",
+    "electron:build:installer": "npm run build && electron-builder --win nsis"
   },
   "dependencies": {
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0",
     "@hookform/resolvers": "^5.2.2",
     "@neondatabase/serverless": "^1.0.2",
     "@supabase/supabase-js": "^2.98.0",
@@ -34,6 +43,8 @@
     "@vitejs/plugin-react": "^4.5.2",
     "autoprefixer": "^10.4.21",
     "daisyui": "^5.5.19",
+    "electron": "33.4.11",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.28.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
@@ -42,5 +53,25 @@
     "tailwindcss": "^4.1.8",
     "vite": "^7.3.1",
     "vite-plugin-pwa": "^1.0.1"
+  },
+  "build": {
+    "appId": "com.sriorusol.jeweller",
+    "productName": "Sri Orusol Jeweller",
+    "directories": {
+      "output": "electron-dist"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "SriOrusol-Portable.exe"
+    }
   }
 }
