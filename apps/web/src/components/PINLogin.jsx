@@ -1,8 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Shield, Lock, AlertCircle, Check, KeyRound, HelpCircle, ArrowRight } from 'lucide-react'
+import { sql, isNeonConfigured } from '../lib/neonClient'
 
 const MAX_ATTEMPTS = 5
 const LOCKOUT_TIME = 300000 // 5 minutes lockout
+
+// Check if we should use direct DB connection (localhost desktop)
+const isLocalhost = () => {
+  if (typeof window === 'undefined') return false
+  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+}
+
+const isMobile = () => {
+  if (typeof navigator === 'undefined') return false
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+}
+
+const shouldUseDirectDB = () => isLocalhost() && !isMobile() && isNeonConfigured && sql
 
 // Simple hash function for PIN (SHA-256 simulation using browser crypto)
 const hashPIN = async (pin) => {
@@ -13,8 +27,14 @@ const hashPIN = async (pin) => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-// API helper for PIN operations
+// API helper for PIN operations - uses direct DB on localhost
 const apiCall = async (action, data = {}) => {
+  // Use direct DB connection on localhost desktop
+  if (shouldUseDirectDB()) {
+    return directDBCall(action, data)
+  }
+  
+  // Use API on production/mobile
   const apiUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/db` : '/api/db'
   const response = await fetch(apiUrl, {
     method: 'POST',
@@ -26,6 +46,69 @@ const apiCall = async (action, data = {}) => {
     throw new Error(errorData.error || `API request failed: ${response.status}`)
   }
   return response.json()
+}
+
+// Direct database operations for localhost
+const directDBCall = async (action, data = {}) => {
+  switch (action) {
+    case 'getAppSettings': {
+      const result = await sql`SELECT * FROM app_settings WHERE id = 'main' LIMIT 1`
+      return { data: result[0] || null }
+    }
+    
+    case 'setupPIN': {
+      const existing = await sql`SELECT id FROM app_settings WHERE id = 'main' LIMIT 1`
+      if (existing.length > 0) {
+        await sql`UPDATE app_settings SET pin_hash = ${data.pin_hash}, security_question = ${data.security_question}, security_answer_hash = ${data.security_answer_hash}, updated_at = NOW() WHERE id = 'main'`
+      } else {
+        await sql`INSERT INTO app_settings (id, pin_hash, security_question, security_answer_hash, lockout_until, failed_attempts, created_at, updated_at) VALUES ('main', ${data.pin_hash}, ${data.security_question}, ${data.security_answer_hash}, NULL, 0, NOW(), NOW())`
+      }
+      return { success: true }
+    }
+    
+    case 'verifyPIN': {
+      const result = await sql`SELECT pin_hash, lockout_until, failed_attempts FROM app_settings WHERE id = 'main' LIMIT 1`
+      if (!result[0]) return { data: { exists: false } }
+      
+      const settings = result[0]
+      if (settings.lockout_until && new Date(settings.lockout_until) > new Date()) {
+        return { data: { locked: true, lockout_until: settings.lockout_until, failed_attempts: settings.failed_attempts } }
+      }
+      
+      const isValid = settings.pin_hash === data.pin_hash
+      if (isValid) {
+        await sql`UPDATE app_settings SET failed_attempts = 0, lockout_until = NULL, updated_at = NOW() WHERE id = 'main'`
+        return { data: { valid: true } }
+      } else {
+        const newAttempts = (settings.failed_attempts || 0) + 1
+        let lockoutUntil = null
+        if (newAttempts >= 5) {
+          lockoutUntil = new Date(Date.now() + 5 * 60 * 1000).toISOString()
+        }
+        await sql`UPDATE app_settings SET failed_attempts = ${newAttempts}, lockout_until = ${lockoutUntil}, updated_at = NOW() WHERE id = 'main'`
+        return { data: { valid: false, failed_attempts: newAttempts, locked: newAttempts >= 5, lockout_until: lockoutUntil } }
+      }
+    }
+    
+    case 'verifySecurityAnswer': {
+      const result = await sql`SELECT security_answer_hash FROM app_settings WHERE id = 'main' LIMIT 1`
+      if (!result[0]) return { data: { exists: false } }
+      
+      const answerValid = result[0].security_answer_hash === data.answer_hash
+      if (answerValid) {
+        await sql`UPDATE app_settings SET failed_attempts = 0, lockout_until = NULL, updated_at = NOW() WHERE id = 'main'`
+      }
+      return { data: { valid: answerValid } }
+    }
+    
+    case 'resetPIN': {
+      await sql`UPDATE app_settings SET pin_hash = NULL, security_question = NULL, security_answer_hash = NULL, failed_attempts = 0, lockout_until = NULL, updated_at = NOW() WHERE id = 'main'`
+      return { success: true }
+    }
+    
+    default:
+      throw new Error(`Unknown action: ${action}`)
+  }
 }
 
 const PINLogin = ({ onAuthenticated }) => {
