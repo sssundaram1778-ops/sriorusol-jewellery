@@ -9,6 +9,8 @@ const getDatabaseUrl = () => {
 
 let sql = null
 let dbUrl = null
+let appSettingsInitialized = false
+
 try {
   dbUrl = getDatabaseUrl()
   if (dbUrl) {
@@ -16,6 +18,30 @@ try {
   }
 } catch (e) {
   console.error('Failed to initialize database:', e.message)
+}
+
+// Ensure app_settings table exists
+const ensureAppSettingsTable = async () => {
+  if (appSettingsInitialized || !sql) return
+  
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS app_settings (
+        id VARCHAR(50) PRIMARY KEY DEFAULT 'main',
+        pin_hash VARCHAR(255),
+        security_question TEXT,
+        security_answer_hash VARCHAR(255),
+        lockout_until TIMESTAMP,
+        failed_attempts INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `
+    appSettingsInitialized = true
+    console.log('app_settings table ensured')
+  } catch (e) {
+    console.error('Failed to ensure app_settings table:', e.message)
+  }
 }
 
 // Helper to execute raw parameterized SQL using neon's tagged template
@@ -78,6 +104,9 @@ export default async function handler(req, res) {
   if (!sql) {
     return res.status(500).json({ error: 'Database not configured' })
   }
+
+  // Ensure app_settings table exists on first request
+  await ensureAppSettingsTable()
 
   try {
     const { action, data } = req.body || {}
