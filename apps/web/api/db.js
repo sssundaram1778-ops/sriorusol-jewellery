@@ -22,7 +22,7 @@ try {
 
 // Ensure app_settings table exists
 const ensureAppSettingsTable = async () => {
-  if (appSettingsInitialized || !sql) return
+  if (appSettingsInitialized || !sql) return false
   
   try {
     await sql`
@@ -39,8 +39,10 @@ const ensureAppSettingsTable = async () => {
     `
     appSettingsInitialized = true
     console.log('app_settings table ensured')
+    return true
   } catch (e) {
     console.error('Failed to ensure app_settings table:', e.message)
+    return false
   }
 }
 
@@ -348,10 +350,21 @@ export default async function handler(req, res) {
 
       case 'setupPIN':
         // Setup PIN and security question (first time or reset)
+        console.log('setupPIN called with data:', { 
+          has_pin: !!data.pin_hash, 
+          has_question: !!data.security_question,
+          has_answer: !!data.security_answer_hash 
+        })
+        
+        // Make sure table exists
+        const tableReady = await ensureAppSettingsTable()
+        console.log('Table ready:', tableReady)
+        
         // First check if settings exist
         const [existingSettings] = await sql`
           SELECT id FROM app_settings WHERE id = 'main' LIMIT 1
         `
+        console.log('Existing settings:', existingSettings)
         
         if (existingSettings) {
           // Update existing
@@ -363,12 +376,14 @@ export default async function handler(req, res) {
               updated_at = NOW()
             WHERE id = 'main'
           `
+          console.log('Updated existing settings')
         } else {
           // Insert new
           await sql`
             INSERT INTO app_settings (id, pin_hash, security_question, security_answer_hash, lockout_until, failed_attempts, created_at, updated_at)
             VALUES ('main', ${data.pin_hash}, ${data.security_question}, ${data.security_answer_hash}, NULL, 0, NOW(), NOW())
           `
+          console.log('Inserted new settings')
         }
         return res.json({ success: true })
 
