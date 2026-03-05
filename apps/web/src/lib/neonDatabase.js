@@ -392,7 +392,11 @@ export const getActivePledges = async () => {
   // Mock fallback
   const pledges = getStoredData(STORAGE_KEYS.PLEDGES)
     .filter(p => p.status === 'ACTIVE')
-    .sort((a, b) => new Date(b.date) - new Date(a.date) || (a.pledge_no || '').localeCompare(b.pledge_no || ''))
+    .sort((a, b) => {
+      const dateCompare = new Date(b.date) - new Date(a.date)
+      if (dateCompare !== 0) return dateCompare
+      return (parseInt(a.pledge_no) || 0) - (parseInt(b.pledge_no) || 0)
+    })
 
   const allAmounts = getStoredData(STORAGE_KEYS.AMOUNTS)
 
@@ -432,7 +436,11 @@ export const getClosedPledges = async () => {
   // Mock fallback
   const pledges = getStoredData(STORAGE_KEYS.PLEDGES)
     .filter(p => p.status === 'CLOSED' || p.status === 'REPLEDGED')
-    .sort((a, b) => new Date(b.date) - new Date(a.date) || (a.pledge_no || '').localeCompare(b.pledge_no || ''))
+    .sort((a, b) => {
+      const dateCompare = new Date(b.date) - new Date(a.date)
+      if (dateCompare !== 0) return dateCompare
+      return (parseInt(a.pledge_no) || 0) - (parseInt(b.pledge_no) || 0)
+    })
 
   const allAmounts = getStoredData(STORAGE_KEYS.AMOUNTS)
 
@@ -469,7 +477,11 @@ export const getAllPledges = async () => {
 
   // Mock fallback
   const pledges = getStoredData(STORAGE_KEYS.PLEDGES)
-    .sort((a, b) => new Date(b.date) - new Date(a.date) || (a.pledge_no || '').localeCompare(b.pledge_no || ''))
+    .sort((a, b) => {
+      const dateCompare = new Date(b.date) - new Date(a.date)
+      if (dateCompare !== 0) return dateCompare
+      return (parseInt(a.pledge_no) || 0) - (parseInt(b.pledge_no) || 0)
+    })
 
   const allAmounts = getStoredData(STORAGE_KEYS.AMOUNTS)
 
@@ -1141,7 +1153,7 @@ export const getOwnerRepledgesByFinancer = async (financerName) => {
         FROM owner_repledges o
         LEFT JOIN pledges p ON o.pledge_id = p.id
         WHERE LOWER(TRIM(o.financer_name)) = LOWER(TRIM(${financerName}))
-        ORDER BY o.created_at DESC
+        ORDER BY o.debt_date DESC, p.pledge_no ASC
       `
       // Map effective_status to status for display
       return (result || []).map(r => ({
@@ -1176,7 +1188,11 @@ export const getOwnerRepledgesByFinancer = async (financerName) => {
         pledge_date: pledge?.date
       }
     })
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .sort((a, b) => {
+      const dateCompare = new Date(b.debt_date) - new Date(a.debt_date)
+      if (dateCompare !== 0) return dateCompare
+      return (parseInt(a.pledge_no) || 0) - (parseInt(b.pledge_no) || 0)
+    })
 }
 
 export const getAllOwnerRepledges = async () => {
