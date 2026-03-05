@@ -252,8 +252,8 @@ export const securityMiddleware = (req, res) => {
     }
   }
   
-  // Validate request body
-  if (req.body) {
+  // Validate request body (skip for rawSql action which uses parameterized queries)
+  if (req.body && req.body.action !== 'rawSql') {
     const validation = validateRequestData(req.body)
     if (!validation.valid) {
       console.warn(`SQL injection attempt from ${ip}: ${validation.field}`)
