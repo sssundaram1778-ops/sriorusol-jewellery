@@ -214,7 +214,7 @@ export const getActivePledges = async () => {
   if (sql) {
     try {
       const pledges = await sql`
-        SELECT * FROM pledges_second WHERE status = 'ACTIVE' ORDER BY date DESC, pledge_no ASC
+        SELECT * FROM pledges_second WHERE status = 'ACTIVE' ORDER BY date DESC, pledge_no DESC
       `
       
       const pledgeIds = pledges.map(p => p.id)
@@ -241,7 +241,7 @@ export const getActivePledges = async () => {
     .sort((a, b) => {
       const dateCompare = new Date(b.date) - new Date(a.date)
       if (dateCompare !== 0) return dateCompare
-      return (parseInt(a.pledge_no) || 0) - (parseInt(b.pledge_no) || 0)
+      return (parseInt(b.pledge_no) || 0) - (parseInt(a.pledge_no) || 0)
     })
 
   const allAmounts = getStoredData(STORAGE_KEYS.AMOUNTS)
@@ -258,7 +258,7 @@ export const getClosedPledges = async () => {
   if (sql) {
     try {
       const pledges = await sql`
-        SELECT * FROM pledges_second WHERE status IN ('CLOSED', 'REPLEDGED') ORDER BY date DESC, pledge_no ASC
+        SELECT * FROM pledges_second WHERE status IN ('CLOSED', 'REPLEDGED') ORDER BY date DESC, pledge_no DESC
       `
       
       const pledgeIds = pledges.map(p => p.id)
@@ -286,7 +286,7 @@ export const getClosedPledges = async () => {
     .sort((a, b) => {
       const dateCompare = new Date(b.date) - new Date(a.date)
       if (dateCompare !== 0) return dateCompare
-      return (parseInt(a.pledge_no) || 0) - (parseInt(b.pledge_no) || 0)
+      return (parseInt(b.pledge_no) || 0) - (parseInt(a.pledge_no) || 0)
     })
 
   const allAmounts = getStoredData(STORAGE_KEYS.AMOUNTS)
@@ -303,7 +303,7 @@ export const getClosedPledges = async () => {
 export const getAllPledges = async () => {
   if (sql) {
     try {
-      const pledges = await sql`SELECT * FROM pledges_second ORDER BY date DESC, pledge_no ASC`
+      const pledges = await sql`SELECT * FROM pledges_second ORDER BY date DESC, pledge_no DESC`
       
       const pledgeIds = pledges.map(p => p.id)
       if (pledgeIds.length === 0) return []
@@ -331,7 +331,7 @@ export const getAllPledges = async () => {
     .sort((a, b) => {
       const dateCompare = new Date(b.date) - new Date(a.date)
       if (dateCompare !== 0) return dateCompare
-      return (parseInt(a.pledge_no) || 0) - (parseInt(b.pledge_no) || 0)
+      return (parseInt(b.pledge_no) || 0) - (parseInt(a.pledge_no) || 0)
     })
 
   const allAmounts = getStoredData(STORAGE_KEYS.AMOUNTS)
@@ -814,7 +814,7 @@ export const getOwnerRepledgesByFinancer = async (financerName) => {
         FROM owner_repledges_second o
         LEFT JOIN pledges_second p ON o.pledge_id = p.id
         WHERE LOWER(TRIM(o.financer_name)) = LOWER(TRIM(${financerName}))
-        ORDER BY o.debt_date DESC, p.pledge_no ASC
+        ORDER BY o.debt_date DESC, p.pledge_no DESC
       `
       return (result || []).map(r => ({
         ...r,
@@ -850,7 +850,7 @@ export const getOwnerRepledgesByFinancer = async (financerName) => {
     .sort((a, b) => {
       const dateCompare = new Date(b.debt_date) - new Date(a.debt_date)
       if (dateCompare !== 0) return dateCompare
-      return (parseInt(a.pledge_no) || 0) - (parseInt(b.pledge_no) || 0)
+      return (parseInt(b.pledge_no) || 0) - (parseInt(a.pledge_no) || 0)
     })
 }
 
