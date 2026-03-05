@@ -525,18 +525,19 @@ export const downloadFinancerPDF = (financerName, financerPlace, pledges) => {
   yPos += 28
   
   // ============ DATA TABLE ============
-  const headers = [['#', 'Pledge No', 'Date', 'Customer', 'Jewel Details', 'Gross', 'Net', 'Amount', 'Debt Date', 'Status']]
+  const headers = [['#', 'Pledge No', 'Date', 'Customer', 'Jewel Details', 'Gross', 'Net', 'Amount', 'Debt Date', 'Status', 'Closed']]
   const rows = pledges.map((p, idx) => [
     String(idx + 1),
     p.pledge_no || '-',
     p.pledge_date ? formatDate(p.pledge_date) : '-',
     p.customer_name || '-',
-    (p.jewels_details || '-').substring(0, 28) + ((p.jewels_details?.length || 0) > 28 ? '...' : ''),
+    (p.jewels_details || '-').substring(0, 22) + ((p.jewels_details?.length || 0) > 22 ? '...' : ''),
     p.gross_weight ? `${p.gross_weight}g` : '-',
     p.net_weight ? `${p.net_weight}g` : '-',
     formatCurrencyPDF(p.amount || 0),
     p.debt_date ? formatDate(p.debt_date) : '-',
-    p.status || '-'
+    p.status || '-',
+    p.release_date ? formatDate(p.release_date) : '-'
   ])
   
   autoTable(doc, {
@@ -565,16 +566,17 @@ export const downloadFinancerPDF = (financerName, financerPlace, pledges) => {
       fillColor: COLORS.lightBlue
     },
     columnStyles: {
-      0: { cellWidth: 12, halign: 'center', textColor: COLORS.textMuted },
-      1: { cellWidth: 26, halign: 'center', fontStyle: 'bold', textColor: COLORS.primary },
-      2: { cellWidth: 24, halign: 'center' },
-      3: { cellWidth: 36, halign: 'left' },
-      4: { cellWidth: 50, halign: 'left' },
-      5: { cellWidth: 18, halign: 'right' },
-      6: { cellWidth: 18, halign: 'right' },
-      7: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },
-      8: { cellWidth: 24, halign: 'center' },
-      9: { cellWidth: 20, halign: 'center' }
+      0: { cellWidth: 10, halign: 'center', textColor: COLORS.textMuted },
+      1: { cellWidth: 24, halign: 'center', fontStyle: 'bold', textColor: COLORS.primary },
+      2: { cellWidth: 22, halign: 'center' },
+      3: { cellWidth: 32, halign: 'left' },
+      4: { cellWidth: 42, halign: 'left' },
+      5: { cellWidth: 16, halign: 'right' },
+      6: { cellWidth: 16, halign: 'right' },
+      7: { cellWidth: 28, halign: 'right', fontStyle: 'bold' },
+      8: { cellWidth: 22, halign: 'center' },
+      9: { cellWidth: 18, halign: 'center' },
+      10: { cellWidth: 22, halign: 'center' }
     },
     margin: { left: margin, right: margin },
     didParseCell: (data) => {
@@ -585,6 +587,9 @@ export const downloadFinancerPDF = (financerName, financerPlace, pledges) => {
         } else if (data.cell.text[0] === 'CLOSED') {
           data.cell.styles.textColor = COLORS.danger
         }
+      }
+      if (data.column.index === 10 && data.section === 'body' && data.cell.text[0] !== '-') {
+        data.cell.styles.textColor = COLORS.danger
       }
     }
   })
@@ -698,19 +703,20 @@ export const downloadAllPledgesPDF = (pledges, reportTitle = 'All Pledges') => {
   yPos += 28
   
   // ============ DATA TABLE ============
-  const headers = [['#', 'Pledge No', 'Date', 'Customer', 'Jewel Details', 'Gross', 'Net', 'Principal', 'Interest', 'Total', 'Status', 'Financer']]
+  const headers = [['#', 'Pledge No', 'Date', 'Customer', 'Jewel Details', 'Gross', 'Net', 'Principal', 'Interest', 'Total', 'Status', 'Closed', 'Financer']]
   const rows = pledges.map((p, idx) => [
     String(idx + 1),
     p.pledge_no || '-',
     formatDate(p.date),
     p.customer_name || '-',
-    (p.jewels_details || '-').substring(0, 20) + ((p.jewels_details?.length || 0) > 20 ? '...' : ''),
+    (p.jewels_details || '-').substring(0, 18) + ((p.jewels_details?.length || 0) > 18 ? '...' : ''),
     `${p.gross_weight || 0}g`,
     `${p.net_weight || 0}g`,
     formatCurrencyPDF(p.totalPrincipal || 0),
     formatCurrencyPDF(p.totalInterest || 0),
     formatCurrencyPDF(p.grandTotal || 0),
     p.status,
+    p.canceled_date ? formatDate(p.canceled_date) : '-',
     p.financer_name || '-'
   ])
   
@@ -742,16 +748,17 @@ export const downloadAllPledgesPDF = (pledges, reportTitle = 'All Pledges') => {
     columnStyles: {
       0: { cellWidth: 10, halign: 'center', textColor: COLORS.textMuted },
       1: { cellWidth: 20, halign: 'center', fontStyle: 'bold', textColor: COLORS.primary },
-      2: { cellWidth: 22, halign: 'center' },
-      3: { cellWidth: 30, halign: 'left' },
-      4: { cellWidth: 38, halign: 'left' },
-      5: { cellWidth: 16, halign: 'right' },
-      6: { cellWidth: 16, halign: 'right' },
-      7: { cellWidth: 28, halign: 'right' },
-      8: { cellWidth: 26, halign: 'right', textColor: COLORS.accent },
-      9: { cellWidth: 28, halign: 'right', fontStyle: 'bold' },
-      10: { cellWidth: 18, halign: 'center' },
-      11: { cellWidth: 28, halign: 'left' }
+      2: { cellWidth: 20, halign: 'center' },
+      3: { cellWidth: 26, halign: 'left' },
+      4: { cellWidth: 32, halign: 'left' },
+      5: { cellWidth: 14, halign: 'right' },
+      6: { cellWidth: 14, halign: 'right' },
+      7: { cellWidth: 26, halign: 'right' },
+      8: { cellWidth: 24, halign: 'right', textColor: COLORS.accent },
+      9: { cellWidth: 26, halign: 'right', fontStyle: 'bold' },
+      10: { cellWidth: 16, halign: 'center' },
+      11: { cellWidth: 20, halign: 'center' },
+      12: { cellWidth: 24, halign: 'left' }
     },
     margin: { left: margin, right: margin },
     didParseCell: (data) => {
@@ -762,6 +769,9 @@ export const downloadAllPledgesPDF = (pledges, reportTitle = 'All Pledges') => {
         } else if (data.cell.text[0] === 'CLOSED') {
           data.cell.styles.textColor = COLORS.danger
         }
+      }
+      if (data.column.index === 11 && data.section === 'body' && data.cell.text[0] !== '-') {
+        data.cell.styles.textColor = COLORS.danger
       }
     }
   })
