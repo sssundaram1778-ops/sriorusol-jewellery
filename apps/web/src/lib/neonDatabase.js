@@ -368,7 +368,7 @@ export const getActivePledges = async () => {
   if (sql) {
     try {
       const pledges = await sql`
-        SELECT * FROM pledges WHERE status = 'ACTIVE' ORDER BY created_at DESC
+        SELECT * FROM pledges WHERE status = 'ACTIVE' ORDER BY date DESC, pledge_no ASC
       `
       
       const pledgeIds = pledges.map(p => p.id)
@@ -392,7 +392,7 @@ export const getActivePledges = async () => {
   // Mock fallback
   const pledges = getStoredData(STORAGE_KEYS.PLEDGES)
     .filter(p => p.status === 'ACTIVE')
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .sort((a, b) => new Date(b.date) - new Date(a.date) || (a.pledge_no || '').localeCompare(b.pledge_no || ''))
 
   const allAmounts = getStoredData(STORAGE_KEYS.AMOUNTS)
 
@@ -408,7 +408,7 @@ export const getClosedPledges = async () => {
   if (sql) {
     try {
       const pledges = await sql`
-        SELECT * FROM pledges WHERE status IN ('CLOSED', 'REPLEDGED') ORDER BY updated_at DESC
+        SELECT * FROM pledges WHERE status IN ('CLOSED', 'REPLEDGED') ORDER BY date DESC, pledge_no ASC
       `
       
       const pledgeIds = pledges.map(p => p.id)
@@ -432,7 +432,7 @@ export const getClosedPledges = async () => {
   // Mock fallback
   const pledges = getStoredData(STORAGE_KEYS.PLEDGES)
     .filter(p => p.status === 'CLOSED' || p.status === 'REPLEDGED')
-    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+    .sort((a, b) => new Date(b.date) - new Date(a.date) || (a.pledge_no || '').localeCompare(b.pledge_no || ''))
 
   const allAmounts = getStoredData(STORAGE_KEYS.AMOUNTS)
 
@@ -447,7 +447,7 @@ export const getClosedPledges = async () => {
 export const getAllPledges = async () => {
   if (sql) {
     try {
-      const pledges = await sql`SELECT * FROM pledges ORDER BY created_at DESC`
+      const pledges = await sql`SELECT * FROM pledges ORDER BY date DESC, pledge_no ASC`
       
       const pledgeIds = pledges.map(p => p.id)
       if (pledgeIds.length === 0) return []
@@ -469,7 +469,7 @@ export const getAllPledges = async () => {
 
   // Mock fallback
   const pledges = getStoredData(STORAGE_KEYS.PLEDGES)
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .sort((a, b) => new Date(b.date) - new Date(a.date) || (a.pledge_no || '').localeCompare(b.pledge_no || ''))
 
   const allAmounts = getStoredData(STORAGE_KEYS.AMOUNTS)
 
