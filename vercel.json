@@ -4,15 +4,10 @@
   "outputDirectory": "apps/web/dist",
   "installCommand": "npm install",
   "framework": "vite",
-  "functions": {
-    "apps/web/api/*.js": {
-      "runtime": "@vercel/node@3.0.0"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "/apps/web/api/:path*"
+      "destination": "/api/:path*"
     },
     {
       "source": "/((?!api/).*)",
