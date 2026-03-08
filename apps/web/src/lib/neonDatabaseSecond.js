@@ -17,6 +17,28 @@ export {
   JEWEL_TYPES 
 }
 
+// Helper to normalize date to yyyy-mm-dd format
+const normalizeDate = (dateValue) => {
+  if (!dateValue) return dateValue
+  if (typeof dateValue === 'string' && dateValue.includes('T')) {
+    return dateValue.split('T')[0]
+  }
+  if (dateValue instanceof Date) {
+    return format(dateValue, 'yyyy-MM-dd')
+  }
+  return dateValue
+}
+
+// Helper to normalize pledge dates
+const normalizePledgeDates = (pledge) => {
+  if (!pledge) return pledge
+  return {
+    ...pledge,
+    date: normalizeDate(pledge.date),
+    canceled_date: normalizeDate(pledge.canceled_date)
+  }
+}
+
 // ============================================
 // MOCK DATA STORAGE (localStorage fallback) - SECOND CATEGORY
 // 3 Essential Tables: pledges_second, pledge_amounts_second, owner_repledges_second
@@ -168,13 +190,13 @@ export const getPledgeById = async (id) => {
       
       const totals = calculatePledgeTotals(amounts || [], endDate)
 
-      return {
+      return normalizePledgeDates({
         ...pledge,
         amounts: amounts || [],
         ownerRepledges: ownerRepledges || [],
         repledges: [],
         ...totals
-      }
+      })
     } catch (error) {
       console.error('Error getting pledge:', error)
       return null
@@ -200,13 +222,13 @@ export const getPledgeById = async (id) => {
   
   const totals = calculatePledgeTotals(amounts, endDate)
 
-  return {
+  return normalizePledgeDates({
     ...pledge,
     amounts,
     ownerRepledges,
     repledges: [],
     ...totals
-  }
+  })
 }
 
 // Get active pledges - Second category

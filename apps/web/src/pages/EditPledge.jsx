@@ -85,9 +85,14 @@ export default function EditPledge() {
       const initialAmountValue = parseFloat(initialAmountEntry?.amount) 
         || parseFloat(currentPledge.totalPrincipal) 
         || 0
+      // Format date to yyyy-mm-dd (handle ISO timestamp)
+      let dateValue = currentPledge.date || ''
+      if (dateValue && dateValue.includes('T')) {
+        dateValue = dateValue.split('T')[0]
+      }
       reset({
         pledge_no: currentPledge.pledge_no || '',
-        date: currentPledge.date || '',
+        date: dateValue,
         place: currentPledge.place || '',
         customer_name: currentPledge.customer_name || '',
         phone_number: currentPledge.phone_number || '',

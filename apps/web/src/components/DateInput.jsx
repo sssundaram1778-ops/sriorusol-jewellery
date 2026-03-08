@@ -8,10 +8,24 @@ export default function DateInput({ value, onChange, className = '', ...props })
 
   // Convert yyyy-mm-dd to dd/mm/yyyy for display
   useEffect(() => {
-    if (value && typeof value === 'string') {
-      const parts = value.split('-')
-      if (parts.length === 3) {
-        setDisplayValue(`${parts[2]}/${parts[1]}/${parts[0]}`)
+    if (value) {
+      let dateStr = ''
+      // Handle Date object
+      if (value instanceof Date) {
+        dateStr = value.toISOString().split('T')[0]
+      } else if (typeof value === 'string') {
+        dateStr = value
+        // Handle ISO timestamp (remove time portion)
+        if (dateStr.includes('T')) {
+          dateStr = dateStr.split('T')[0]
+        }
+      }
+      // Handle yyyy-mm-dd format
+      if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = dateStr.split('-')
+        setDisplayValue(`${day}/${month}/${year}`)
+      } else {
+        setDisplayValue('')
       }
     } else {
       setDisplayValue('')
@@ -81,7 +95,11 @@ export default function DateInput({ value, onChange, className = '', ...props })
       <input
         ref={dateInputRef}
         type="date"
-        value={typeof value === 'string' ? value : ''}
+        value={
+          value instanceof Date 
+            ? value.toISOString().split('T')[0] 
+            : (typeof value === 'string' ? (value.includes('T') ? value.split('T')[0] : value) : '')
+        }
         onChange={handleCalendarChange}
         className="absolute opacity-0 pointer-events-none w-0 h-0"
         tabIndex={-1}

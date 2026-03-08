@@ -51,10 +51,17 @@ export default function EditOwnerRepledgeModal({
   useEffect(() => {
     if (isOpen && ownerRepledge) {
       const amount = parseFloat(ownerRepledge.amount) || 0
+      // Format date to yyyy-mm-dd (handle ISO timestamp or Date object)
+      let debtDateValue = ownerRepledge.debt_date || ''
+      if (debtDateValue instanceof Date) {
+        debtDateValue = debtDateValue.toISOString().split('T')[0]
+      } else if (typeof debtDateValue === 'string' && debtDateValue.includes('T')) {
+        debtDateValue = debtDateValue.split('T')[0]
+      }
       reset({
         financer_name: ownerRepledge.financer_name || '',
         amount: amount,
-        debt_date: ownerRepledge.debt_date || '',
+        debt_date: debtDateValue,
         notes: ownerRepledge.notes || ''
       })
       setSearchQuery(ownerRepledge.financer_name || '')
