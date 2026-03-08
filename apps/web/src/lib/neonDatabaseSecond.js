@@ -20,12 +20,37 @@ export {
 // Helper to normalize date to yyyy-mm-dd format
 const normalizeDate = (dateValue) => {
   if (!dateValue) return dateValue
-  if (typeof dateValue === 'string' && dateValue.includes('T')) {
-    return dateValue.split('T')[0]
-  }
+  
+  // Handle Date object
   if (dateValue instanceof Date) {
     return format(dateValue, 'yyyy-MM-dd')
   }
+  
+  // Handle string
+  if (typeof dateValue === 'string') {
+    // Handle ISO timestamp with T
+    if (dateValue.includes('T')) {
+      return dateValue.split('T')[0]
+    }
+    // Handle date with space (e.g., "2026-02-09 00:00:00")
+    if (dateValue.includes(' ')) {
+      return dateValue.split(' ')[0]
+    }
+    // Already in yyyy-mm-dd format
+    if (dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateValue
+    }
+    // Try to parse and format
+    try {
+      const parsed = new Date(dateValue)
+      if (!isNaN(parsed.getTime())) {
+        return format(parsed, 'yyyy-MM-dd')
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  
   return dateValue
 }
 
@@ -35,7 +60,13 @@ const normalizePledgeDates = (pledge) => {
   return {
     ...pledge,
     date: normalizeDate(pledge.date),
-    canceled_date: normalizeDate(pledge.canceled_date)
+    canceled_date: normalizeDate(pledge.canceled_date),
+    // Also normalize owner repledge dates if present
+    ownerRepledges: pledge.ownerRepledges?.map(or => ({
+      ...or,
+      debt_date: normalizeDate(or.debt_date),
+      release_date: normalizeDate(or.release_date)
+    })) || pledge.ownerRepledges
   }
 }
 
