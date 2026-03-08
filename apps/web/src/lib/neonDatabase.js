@@ -508,7 +508,7 @@ export const searchPledges = async (query, status = 'ALL') => {
             OR place ILIKE ${searchPattern} 
             OR pledge_no ILIKE ${searchPattern}
             OR phone_number ILIKE ${searchPattern})
-          ORDER BY created_at DESC
+          ORDER BY date DESC, pledge_no DESC
         `
       } else {
         pledges = await sql`
@@ -517,7 +517,7 @@ export const searchPledges = async (query, status = 'ALL') => {
             OR place ILIKE ${searchPattern} 
             OR pledge_no ILIKE ${searchPattern}
             OR phone_number ILIKE ${searchPattern}
-          ORDER BY created_at DESC
+          ORDER BY date DESC, pledge_no DESC
         `
       }
       
@@ -584,13 +584,17 @@ export const updatePledge = async (id, updates) => {
       
       await sql`
         UPDATE pledges 
-        SET customer_name = COALESCE(${updates.customer_name}, customer_name),
+        SET pledge_no = COALESCE(${updates.pledge_no}, pledge_no),
+            customer_name = COALESCE(${updates.customer_name}, customer_name),
             phone_number = COALESCE(${updates.phone_number}, phone_number),
             place = COALESCE(${updates.place}, place),
+            date = COALESCE(${updates.date}, date),
             jewels_details = COALESCE(${updates.jewels_details}, jewels_details),
             no_of_items = COALESCE(${updates.no_of_items}, no_of_items),
             gross_weight = COALESCE(${updates.gross_weight}, gross_weight),
             net_weight = COALESCE(${updates.net_weight}, net_weight),
+            jewel_type = COALESCE(${updates.jewel_type}, jewel_type),
+            interest_rate = COALESCE(${updates.interest_rate}, interest_rate),
             status = COALESCE(${updates.status}, status),
             canceled_date = COALESCE(${updates.canceled_date}, canceled_date),
             return_pledge_id = COALESCE(${updates.return_pledge_id}, return_pledge_id),
@@ -598,6 +602,17 @@ export const updatePledge = async (id, updates) => {
             updated_at = NOW()
         WHERE id = ${id}
       `
+      
+      // If initialAmount is provided, update the INITIAL amount entry
+      if (updates.initialAmount !== undefined && updates.initialAmount !== null) {
+        await sql`
+          UPDATE pledge_amounts 
+          SET amount = ${updates.initialAmount},
+              date = COALESCE(${updates.date}, date),
+              interest_rate = COALESCE(${updates.interest_rate}, interest_rate)
+          WHERE pledge_id = ${id} AND amount_type = 'INITIAL'
+        `
+      }
       
       const result = await sql`SELECT * FROM pledges WHERE id = ${id}`
       return result[0]
@@ -614,6 +629,19 @@ export const updatePledge = async (id, updates) => {
   
   pledges[index] = { ...pledges[index], ...updates, updated_at: new Date().toISOString() }
   setStoredData(STORAGE_KEYS.PLEDGES, pledges)
+  
+  // Update initial amount in mock storage
+  if (updates.initialAmount !== undefined && updates.initialAmount !== null) {
+    const amounts = getStoredData(STORAGE_KEYS.AMOUNTS)
+    const amountIndex = amounts.findIndex(a => a.pledge_id === id && a.amount_type === 'INITIAL')
+    if (amountIndex !== -1) {
+      amounts[amountIndex].amount = updates.initialAmount
+      if (updates.date) amounts[amountIndex].date = updates.date
+      if (updates.interest_rate) amounts[amountIndex].interest_rate = updates.interest_rate
+      setStoredData(STORAGE_KEYS.AMOUNTS, amounts)
+    }
+  }
+  
   return pledges[index]
 }
 
@@ -955,6 +983,41 @@ export const closeOwnerRepledge = async (id, releaseDate) => {
   if (index === -1) throw new Error('Owner re-pledge not found')
   
   ownerRepledges[index] = { ...ownerRepledges[index], status: 'CLOSED', release_date: releaseDate }
+  setStoredData(OWNER_REPLEDGES_KEY, ownerRepledges)
+  return ownerRepledges[index]
+}
+
+export const updateOwnerRepledge = async (id, updates) => {
+  if (sql) {
+    try {
+      await sql`
+        UPDATE owner_repledges 
+        SET financer_name = COALESCE(${updates.financer_name}, financer_name),
+            amount = COALESCE(${updates.amount}, amount),
+            debt_date = COALESCE(${updates.debt_date}, debt_date),
+            notes = COALESCE(${updates.notes}, notes)
+        WHERE id = ${id}
+      `
+      const result = await sql`SELECT * FROM owner_repledges WHERE id = ${id}`
+      return result[0]
+    } catch (error) {
+      console.error('Error updating owner repledge:', error)
+      throw error
+    }
+  }
+
+  // Mock fallback
+  const ownerRepledges = getStoredData(OWNER_REPLEDGES_KEY)
+  const index = ownerRepledges.findIndex(r => r.id === id)
+  if (index === -1) throw new Error('Owner re-pledge not found')
+  
+  ownerRepledges[index] = { 
+    ...ownerRepledges[index], 
+    financer_name: updates.financer_name || ownerRepledges[index].financer_name,
+    amount: updates.amount || ownerRepledges[index].amount,
+    debt_date: updates.debt_date || ownerRepledges[index].debt_date,
+    notes: updates.notes !== undefined ? updates.notes : ownerRepledges[index].notes
+  }
   setStoredData(OWNER_REPLEDGES_KEY, ownerRepledges)
   return ownerRepledges[index]
 }

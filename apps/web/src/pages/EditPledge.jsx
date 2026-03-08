@@ -8,20 +8,22 @@ import toast from 'react-hot-toast'
 import { usePledgeStore } from '../store/pledgeStore'
 import { usePledgeStoreSecond } from '../store/pledgeStoreSecond'
 import { useCategoryStore } from '../store/categoryStore'
-import { Save, X, CircleDot, ChevronLeft, Edit2 } from 'lucide-react'
+import { Save, X, CircleDot, ChevronLeft, Edit2, Wallet } from 'lucide-react'
 import DateInput from '../components/DateInput'
 
 const pledgeSchema = z.object({
+  pledge_no: z.string().min(1, 'Pledge number is required'),
   date: z.string().min(1, 'Date is required'),
   place: z.string().optional(),
   customer_name: z.string().min(1, 'Customer name is required'),
   phone_number: z.string().optional(),
   jewels_details: z.string().optional(),
   no_of_items: z.number().min(1).default(1),
-  gross_weight: z.number().min(0).optional(),
-  net_weight: z.number().min(0).optional(),
+  gross_weight: z.union([z.number().min(0), z.literal('')]).optional(),
+  net_weight: z.union([z.number().min(0), z.literal('')]).optional(),
   jewel_type: z.enum(['GOLD', 'SILVER', 'MIXED']).default('GOLD'),
-  interest_rate: z.number().min(0).max(100).default(2)
+  interest_rate: z.number().min(0).max(100).default(2),
+  initialAmount: z.number().min(1, 'Loan amount must be greater than 0')
 })
 
 export default function EditPledge() {
@@ -50,17 +52,27 @@ export default function EditPledge() {
   } = useForm({
     resolver: zodResolver(pledgeSchema),
     defaultValues: {
+      pledge_no: '',
       date: '',
+      place: '',
+      customer_name: '',
+      phone_number: '',
+      jewels_details: '',
       no_of_items: 1,
       gross_weight: '',
       net_weight: '',
       jewel_type: 'GOLD',
-      interest_rate: 2
+      interest_rate: 2,
+      initialAmount: 0
     }
   })
 
   useEffect(() => {
-    if (id) fetchPledgeById(id)
+    if (id) {
+      fetchPledgeById(id).catch(err => {
+        console.error('Failed to fetch pledge:', err)
+      })
+    }
     return () => clearCurrentPledge()
   }, [id, fetchPledgeById, clearCurrentPledge])
 
@@ -68,17 +80,24 @@ export default function EditPledge() {
     if (currentPledge) {
       const jewelType = currentPledge.jewel_type || 'GOLD'
       setSelectedJewelType(jewelType)
+      // Get initial amount from first amount entry or totalPrincipal
+      const initialAmountEntry = currentPledge.amounts?.find(a => a.amount_type === 'INITIAL')
+      const initialAmountValue = parseFloat(initialAmountEntry?.amount) 
+        || parseFloat(currentPledge.totalPrincipal) 
+        || 0
       reset({
-        date: currentPledge.date,
+        pledge_no: currentPledge.pledge_no || '',
+        date: currentPledge.date || '',
         place: currentPledge.place || '',
-        customer_name: currentPledge.customer_name,
+        customer_name: currentPledge.customer_name || '',
         phone_number: currentPledge.phone_number || '',
         jewels_details: currentPledge.jewels_details || '',
-        no_of_items: currentPledge.no_of_items || 1,
-        gross_weight: currentPledge.gross_weight || '',
-        net_weight: currentPledge.net_weight || '',
+        no_of_items: parseInt(currentPledge.no_of_items) || 1,
+        gross_weight: parseFloat(currentPledge.gross_weight) || '',
+        net_weight: parseFloat(currentPledge.net_weight) || '',
         jewel_type: jewelType,
-        interest_rate: currentPledge.interest_rate || 2
+        interest_rate: parseFloat(currentPledge.interest_rate) || 2,
+        initialAmount: initialAmountValue
       })
     }
   }, [currentPledge, reset])
@@ -137,17 +156,18 @@ export default function EditPledge() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="px-4 py-4 space-y-4">
-        {/* Pledge No (Read-only) */}
+        {/* Pledge No */}
         <div className="form-control">
           <label className="label">
-            <span className="label-text font-medium">{t('pledge.pledgeNo')}</span>
+            <span className="label-text font-medium">{t('pledge.pledgeNo')} *</span>
           </label>
           <input
             type="text"
-            value={currentPledge.pledge_no}
-            disabled
-            className="input input-bordered w-full bg-slate-50"
+            {...register('pledge_no')}
+            placeholder="Enter pledge number"
+            className={`input input-bordered w-full ${isFirst ? 'focus:border-blue-600' : 'focus:border-purple-600'}`}
           />
+          {errors.pledge_no && <span className="text-error text-sm mt-1">{errors.pledge_no.message}</span>}
         </div>
 
         {/* Date */}
@@ -335,6 +355,31 @@ export default function EditPledge() {
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">g</span>
             </div>
+          </div>
+        </div>
+
+        {/* Loan Amount */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-sm">
+              <Wallet className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-800">{t('pledge.loanAmount')} *</h2>
+              <p className="text-xs text-slate-500">Edit the loan amount</p>
+            </div>
+          </div>
+          <div className="form-control">
+            <div className="relative">
+              <span className={`absolute left-4 top-1/2 -translate-y-1/2 ${isFirst ? 'text-blue-600' : 'text-purple-600'} font-bold text-xl`}>₹</span>
+              <input
+                type="number"
+                {...register('initialAmount', { valueAsNumber: true })}
+                placeholder="0"
+                className={`w-full h-16 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-2xl font-bold placeholder-gray-300 tabular-nums focus:bg-white ${isFirst ? 'focus:border-blue-600 focus:ring-blue-600/10' : 'focus:border-purple-600 focus:ring-purple-600/10'} focus:ring-2 outline-none transition-all`}
+              />
+            </div>
+            {errors.initialAmount && <span className="text-red-500 text-xs mt-1.5 block">{errors.initialAmount.message}</span>}
           </div>
         </div>
 

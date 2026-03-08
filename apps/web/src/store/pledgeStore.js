@@ -279,5 +279,24 @@ export const usePledgeStore = create((set, get) => ({
       set({ error: error.message, isLoading: false })
       throw error
     }
+  },
+
+  // Update owner re-pledge
+  updateOwnerRepledge: async (pledgeId, ownerRepledgeId, updates) => {
+    set({ isLoading: true, error: null })
+    try {
+      const result = await api.updateOwnerRepledge(ownerRepledgeId, updates)
+      // Refresh current pledge
+      const pledge = await api.getPledgeById(pledgeId)
+      const ownerRepledges = await api.getOwnerRepledgesByPledgeId(pledgeId)
+      set({ 
+        currentPledge: { ...pledge, ownerRepledges },
+        isLoading: false 
+      })
+      return result
+    } catch (error) {
+      set({ error: error.message, isLoading: false })
+      throw error
+    }
   }
 }))

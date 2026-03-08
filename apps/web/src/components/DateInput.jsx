@@ -8,7 +8,7 @@ export default function DateInput({ value, onChange, className = '', ...props })
 
   // Convert yyyy-mm-dd to dd/mm/yyyy for display
   useEffect(() => {
-    if (value) {
+    if (value && typeof value === 'string') {
       const parts = value.split('-')
       if (parts.length === 3) {
         setDisplayValue(`${parts[2]}/${parts[1]}/${parts[0]}`)
@@ -81,7 +81,7 @@ export default function DateInput({ value, onChange, className = '', ...props })
       <input
         ref={dateInputRef}
         type="date"
-        value={value || ''}
+        value={typeof value === 'string' ? value : ''}
         onChange={handleCalendarChange}
         className="absolute opacity-0 pointer-events-none w-0 h-0"
         tabIndex={-1}

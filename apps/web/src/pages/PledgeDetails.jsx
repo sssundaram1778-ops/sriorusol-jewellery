@@ -13,6 +13,7 @@ import ReturnModal from '../components/ReturnModal'
 import AdditionalAmountReturnModal from '../components/AdditionalAmountReturnModal'
 import OwnerRepledgeModal from '../components/OwnerRepledgeModal'
 import CloseOwnerRepledgeModal from '../components/CloseOwnerRepledgeModal'
+import EditOwnerRepledgeModal from '../components/EditOwnerRepledgeModal'
 import DateInput from '../components/DateInput'
 import { 
   Download, XCircle, MapPin, User, Scale, Calendar, 
@@ -33,6 +34,7 @@ export default function PledgeDetails() {
   const [showAdditionalReturnModal, setShowAdditionalReturnModal] = useState(false)
   const [showOwnerRepledgeModal, setShowOwnerRepledgeModal] = useState(false)
   const [showCloseOwnerRepledgeModal, setShowCloseOwnerRepledgeModal] = useState(false)
+  const [showEditOwnerRepledgeModal, setShowEditOwnerRepledgeModal] = useState(false)
   const [selectedOwnerRepledge, setSelectedOwnerRepledge] = useState(null)
   const [showAmountHistory, setShowAmountHistory] = useState(true)
   const [showOwnerRepledgeHistory, setShowOwnerRepledgeHistory] = useState(true)
@@ -58,6 +60,7 @@ export default function PledgeDetails() {
     createAdditionalAmountRepledge,
     createOwnerRepledge,
     closeOwnerRepledge,
+    updateOwnerRepledge,
     clearCurrentPledge 
   } = store
 
@@ -183,6 +186,17 @@ export default function PledgeDetails() {
     try {
       await closeOwnerRepledge(id, selectedOwnerRepledge.id, releaseDate)
       toast.success(t('messages.ownerRepledgeClosed'))
+      setSelectedOwnerRepledge(null)
+    } catch (error) {
+      toast.error(error.message || t('common.error'))
+      throw error
+    }
+  }
+
+  const handleEditOwnerRepledge = async (ownerRepledgeId, updates) => {
+    try {
+      await updateOwnerRepledge(id, ownerRepledgeId, updates)
+      toast.success(t('messages.ownerRepledgeUpdated') || 'Financer pledge updated successfully')
       setSelectedOwnerRepledge(null)
     } catch (error) {
       toast.error(error.message || t('common.error'))
@@ -536,15 +550,27 @@ export default function PledgeDetails() {
                         <p className="text-xs text-slate-500 mt-3 italic bg-white rounded-lg p-2">{or.notes}</p>
                       )}
                       {or.status === 'ACTIVE' && (
-                        <button
-                          onClick={() => {
-                            setSelectedOwnerRepledge(or)
-                            setShowCloseOwnerRepledgeModal(true)
-                          }}
-                          className="mt-3 px-4 py-2 text-xs bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 font-bold"
-                        >
-                          {t('ownerRepledge.closeRepledge')}
-                        </button>
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => {
+                              setSelectedOwnerRepledge(or)
+                              setShowEditOwnerRepledgeModal(true)
+                            }}
+                            className={`flex-1 px-4 py-2 text-xs ${isFirst ? 'bg-blue-500 hover:bg-blue-600' : 'bg-purple-500 hover:bg-purple-600'} text-white rounded-xl font-bold flex items-center justify-center gap-1`}
+                          >
+                            <Edit2 className="w-3 h-3" />
+                            {t('pledge.edit') || 'Edit'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedOwnerRepledge(or)
+                              setShowCloseOwnerRepledgeModal(true)
+                            }}
+                            className="flex-1 px-4 py-2 text-xs bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 font-bold"
+                          >
+                            {t('ownerRepledge.closeRepledge')}
+                          </button>
+                        </div>
                       )}
                     </div>
                   )
@@ -850,6 +876,17 @@ export default function PledgeDetails() {
           setSelectedOwnerRepledge(null)
         }}
         onSubmit={handleCloseOwnerRepledge}
+        ownerRepledge={selectedOwnerRepledge}
+      />
+
+      {/* Edit Owner Re-Pledge Modal */}
+      <EditOwnerRepledgeModal
+        isOpen={showEditOwnerRepledgeModal}
+        onClose={() => {
+          setShowEditOwnerRepledgeModal(false)
+          setSelectedOwnerRepledge(null)
+        }}
+        onSubmit={handleEditOwnerRepledge}
         ownerRepledge={selectedOwnerRepledge}
       />
     </div>
