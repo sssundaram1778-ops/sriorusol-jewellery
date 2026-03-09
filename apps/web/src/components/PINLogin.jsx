@@ -268,7 +268,7 @@ const PINLogin = ({ onAuthenticated }) => {
       onAuthenticated()
     } catch (err) {
       console.error('PIN setup error:', err)
-      setError('Failed to setup PIN. Please try again.')
+      setError(`Failed to setup PIN: ${err.message || 'Unknown error'}. Please try again.`)
     } finally {
       setLoading(false)
     }
