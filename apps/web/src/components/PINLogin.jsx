@@ -62,19 +62,27 @@ const apiCall = async (action, data = {}) => {
 
 // Direct database operations for localhost
 const directDBCall = async (action, data = {}) => {
+  console.log('[Direct DB] Action:', action, 'Data:', data)
   switch (action) {
     case 'getAppSettings': {
+      console.log('[Direct DB] Fetching app_settings...')
       const result = await sql`SELECT * FROM app_settings WHERE id = 'main' LIMIT 1`
+      console.log('[Direct DB] Result:', result)
       return { data: result[0] || null }
     }
     
     case 'setupPIN': {
+      console.log('[Direct DB] Setting up PIN...')
       const existing = await sql`SELECT id FROM app_settings WHERE id = 'main' LIMIT 1`
-      if (existing.length > 0) {
+      console.log('[Direct DB] Existing settings:', existing)
+      if (existing && existing.length > 0) {
+        console.log('[Direct DB] Updating existing...')
         await sql`UPDATE app_settings SET pin_hash = ${data.pin_hash}, security_question = ${data.security_question}, security_answer_hash = ${data.security_answer_hash}, updated_at = NOW() WHERE id = 'main'`
       } else {
+        console.log('[Direct DB] Inserting new...')
         await sql`INSERT INTO app_settings (id, pin_hash, security_question, security_answer_hash, lockout_until, failed_attempts, created_at, updated_at) VALUES ('main', ${data.pin_hash}, ${data.security_question}, ${data.security_answer_hash}, NULL, 0, NOW(), NOW())`
       }
+      console.log('[Direct DB] PIN setup complete')
       return { success: true }
     }
     
