@@ -13,10 +13,14 @@ const BLOCKED_IPS_TTL = 15 * 60 * 1000 // 15 minutes block
 const ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:5173',
+  'http://localhost:5174',
   'http://127.0.0.1:3000',
   'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
   'https://sriorusol-jeweller.vercel.app',
-  'https://sriorusol-jeweller-*.vercel.app'
+  'https://sriorusol-jeweller-*.vercel.app',
+  'https://suss-pledges.vercel.app',
+  'https://suss-pledges-*.vercel.app'
 ]
 
 // SQL injection patterns to block
