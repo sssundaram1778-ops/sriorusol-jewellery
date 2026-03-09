@@ -36,16 +36,28 @@ const apiCall = async (action, data = {}) => {
   
   // Use API on production/mobile
   const apiUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/db` : '/api/db'
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, data }),
-  })
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.error || `API request failed: ${response.status}`)
+  console.log('[PIN API] Calling:', apiUrl, 'action:', action)
+  
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, data }),
+    })
+    console.log('[PIN API] Response status:', response.status)
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      console.error('[PIN API] Error response:', errorData)
+      throw new Error(errorData.error || `API request failed: ${response.status}`)
+    }
+    const result = await response.json()
+    console.log('[PIN API] Success:', result)
+    return result
+  } catch (err) {
+    console.error('[PIN API] Fetch error:', err)
+    throw err
   }
-  return response.json()
 }
 
 // Direct database operations for localhost
