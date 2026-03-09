@@ -36,9 +36,9 @@ const sendOTPEmail = async (email, otp) => {
   const transporter = createTransporter()
   
   const mailOptions = {
-    from: `"Sri Orusol Jewellers" <${process.env.GMAIL_USER || AUTHORIZED_EMAIL}>`,
+    from: `"SUSS" <${process.env.GMAIL_USER || AUTHORIZED_EMAIL}>`,
     to: email,
-    subject: '🔐 Your Login OTP - Sri Orusol Jewellers',
+    subject: '🔐 Your Login OTP - SUSS',
     html: `
       <!DOCTYPE html>
       <html>
@@ -51,7 +51,7 @@ const sendOTPEmail = async (email, otp) => {
           <!-- Header -->
           <div style="background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%); padding: 30px; text-align: center;">
             <h1 style="color: white; margin: 0; font-size: 24px;">🔐 Secure Login</h1>
-            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Sri Orusol Jewellers</p>
+            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">SUSS</p>
           </div>
           
           <!-- Content -->
@@ -82,14 +82,14 @@ const sendOTPEmail = async (email, otp) => {
               If you didn't request this OTP, please ignore this email.
             </p>
             <p style="color: #9ca3af; font-size: 11px; margin: 10px 0 0 0;">
-              © ${new Date().getFullYear()} Sri Orusol Jewellers. Secure Pledge Management.
+              © ${new Date().getFullYear()} SUSS. Secure Access.
             </p>
           </div>
         </div>
       </body>
       </html>
     `,
-    text: `Your OTP for Sri Orusol Jewellers login is: ${otp}. This code will expire in ${OTP_EXPIRY_MINUTES} minutes.`
+    text: `Your OTP for SUSS login is: ${otp}. This code will expire in ${OTP_EXPIRY_MINUTES} minutes.`
   }
   
   return transporter.sendMail(mailOptions)

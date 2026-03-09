@@ -4,8 +4,8 @@
   "type": "module",
   "private": true,
   "main": "electron/main.cjs",
-  "author": "Sri Orusol Jeweller",
-  "description": "Rental Jewels Management System - ஸ்ரீ ஒருசோல் நகை கடை",
+  "author": "SUSS",
+  "description": "SUSS",
   "scripts": {
     "dev": "vite --host",
     "api": "node server.mjs",
@@ -61,8 +61,8 @@
     "vite-plugin-pwa": "^1.0.1"
   },
   "build": {
-    "appId": "com.sriorusol.jeweller",
-    "productName": "Sri Orusol Jeweller",
+    "appId": "com.suss.jeweller",
+    "productName": "SUSS",
     "directories": {
       "output": "electron-dist"
     },

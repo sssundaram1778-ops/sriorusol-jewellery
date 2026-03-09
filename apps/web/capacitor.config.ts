@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.sriorusol.jeweller',
-  appName: 'Sri Orusol Jeweller',
+  appId: 'com.suss.jeweller',
+  appName: 'SUSS',
   webDir: 'out',
   server: {
     // Use Vercel URL for live data

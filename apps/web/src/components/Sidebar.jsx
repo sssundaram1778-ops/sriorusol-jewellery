@@ -36,7 +36,7 @@ export default function Sidebar() {
             <Gem className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Sri Orusol</h1>
+            <h1 className="text-xl font-bold text-white tracking-tight">SUSS</h1>
             <p className={`text-xs font-medium ${isSecond ? 'text-purple-400' : 'text-slate-400'}`}>
               {isSecond ? 'Second Pledges' : 'Jeweller Management'}
             </p>

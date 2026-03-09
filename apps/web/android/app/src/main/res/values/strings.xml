@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Sri Orusol Jeweller</string>
-    <string name="title_activity_main">Sri Orusol Jeweller</string>
+    <string name="app_name">SUSS</string>
+    <string name="title_activity_main">SUSS</string>
     <string name="package_name">com.sriorusol.jeweller</string>
     <string name="custom_url_scheme">com.sriorusol.jeweller</string>
 </resources>

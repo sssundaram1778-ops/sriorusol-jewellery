@@ -65,7 +65,7 @@ export default function InstallPrompt() {
         </div>
         <div className="p-4">
           <p className="text-gray-600 text-sm mb-4">
-            {t('pwa.installDescription', 'Install Sri Orusol for quick access and offline use')}
+            {t('pwa.installDescription', 'Install SUSS for quick access and offline use')}
           </p>
           <div className="flex gap-2">
             <button

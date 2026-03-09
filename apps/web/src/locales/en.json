@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "Sri Orusol Jeweller",
-    "tagline": "Rental Jewels Management",
+    "name": "SUSS",
+    "tagline": "",
     "version": "Version"
   },
   "nav": {
@@ -17,7 +17,7 @@
   },
   "pwa": {
     "installTitle": "Install App",
-    "installDescription": "Install Sri Orusol for quick access and offline use",
+    "installDescription": "Install SUSS for quick access and offline use",
     "install": "Install",
     "later": "Later",
     "updateAvailable": "A new version is available",

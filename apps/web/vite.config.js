@@ -12,9 +12,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.svg'],
       manifest: {
-        name: 'Sri Orusol Jewellery - Rental Management',
-        short_name: 'Sri Orusol',
-        description: 'Rental Jewels Data Entry & Management System - ஸ்ரீ ஒருசோல் நகை கடை',
+        name: 'SUSS - Rental Management',
+        short_name: 'SUSS',
+        description: 'SUSS',
         theme_color: '#2563EB',
         background_color: '#EFF6FF',
         display: 'standalone',

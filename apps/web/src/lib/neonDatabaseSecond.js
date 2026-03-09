@@ -276,11 +276,17 @@ export const getActivePledges = async () => {
       const allAmounts = await sql`
         SELECT * FROM pledge_amounts_second WHERE pledge_id = ANY(${pledgeIds})
       `
+      
+      // Fetch active owner repledges to get financer names
+      const ownerRepledges = await sql`
+        SELECT pledge_id, financer_name FROM owner_repledges_second WHERE pledge_id = ANY(${pledgeIds}) AND status = 'ACTIVE'
+      `
 
       return pledges.map(pledge => {
         const amounts = allAmounts?.filter(a => a.pledge_id === pledge.id) || []
         const totals = calculatePledgeTotals(amounts, new Date())
-        return { ...pledge, amounts, ...totals }
+        const ownerRepledge = ownerRepledges?.find(r => r.pledge_id === pledge.id)
+        return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
       })
     } catch (error) {
       console.error('Error getting active pledges:', error)
@@ -298,11 +304,13 @@ export const getActivePledges = async () => {
     })
 
   const allAmounts = getStoredData(STORAGE_KEYS.AMOUNTS)
+  const ownerRepledges = getStoredData(OWNER_REPLEDGES_KEY)
 
   return pledges.map(pledge => {
     const amounts = allAmounts.filter(a => a.pledge_id === pledge.id)
     const totals = calculatePledgeTotals(amounts, new Date())
-    return { ...pledge, amounts, ...totals }
+    const ownerRepledge = ownerRepledges.find(r => r.pledge_id === pledge.id && r.status === 'ACTIVE')
+    return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
   })
 }
 
@@ -320,12 +328,18 @@ export const getClosedPledges = async () => {
       const allAmounts = await sql`
         SELECT * FROM pledge_amounts_second WHERE pledge_id = ANY(${pledgeIds})
       `
+      
+      // Fetch owner repledges to get financer names (any status for closed pledges)
+      const ownerRepledges = await sql`
+        SELECT pledge_id, financer_name FROM owner_repledges_second WHERE pledge_id = ANY(${pledgeIds})
+      `
 
       return pledges.map(pledge => {
         const amounts = allAmounts?.filter(a => a.pledge_id === pledge.id) || []
         const endDate = pledge.canceled_date ? new Date(pledge.canceled_date) : new Date()
         const totals = calculatePledgeTotals(amounts, endDate)
-        return { ...pledge, amounts, ...totals }
+        const ownerRepledge = ownerRepledges?.find(r => r.pledge_id === pledge.id)
+        return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
       })
     } catch (error) {
       console.error('Error getting closed pledges:', error)
@@ -343,12 +357,14 @@ export const getClosedPledges = async () => {
     })
 
   const allAmounts = getStoredData(STORAGE_KEYS.AMOUNTS)
+  const ownerRepledges = getStoredData(OWNER_REPLEDGES_KEY)
 
   return pledges.map(pledge => {
     const amounts = allAmounts.filter(a => a.pledge_id === pledge.id)
     const endDate = pledge.canceled_date ? new Date(pledge.canceled_date) : new Date()
     const totals = calculatePledgeTotals(amounts, endDate)
-    return { ...pledge, amounts, ...totals }
+    const ownerRepledge = ownerRepledges.find(r => r.pledge_id === pledge.id)
+    return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
   })
 }
 
@@ -364,6 +380,11 @@ export const getAllPledges = async () => {
       const allAmounts = await sql`
         SELECT * FROM pledge_amounts_second WHERE pledge_id = ANY(${pledgeIds})
       `
+      
+      // Fetch owner repledges to get financer names
+      const ownerRepledges = await sql`
+        SELECT pledge_id, financer_name, status FROM owner_repledges_second WHERE pledge_id = ANY(${pledgeIds})
+      `
 
       return pledges.map(pledge => {
         const amounts = allAmounts?.filter(a => a.pledge_id === pledge.id) || []
@@ -371,7 +392,10 @@ export const getAllPledges = async () => {
           ? new Date(pledge.canceled_date)
           : new Date()
         const totals = calculatePledgeTotals(amounts, endDate)
-        return { ...pledge, amounts, ...totals }
+        const ownerRepledge = pledge.status === 'ACTIVE'
+          ? ownerRepledges?.find(r => r.pledge_id === pledge.id && r.status === 'ACTIVE')
+          : ownerRepledges?.find(r => r.pledge_id === pledge.id)
+        return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
       })
     } catch (error) {
       console.error('Error getting all pledges:', error)
@@ -388,6 +412,7 @@ export const getAllPledges = async () => {
     })
 
   const allAmounts = getStoredData(STORAGE_KEYS.AMOUNTS)
+  const ownerRepledges = getStoredData(OWNER_REPLEDGES_KEY)
 
   return pledges.map(pledge => {
     const amounts = allAmounts.filter(a => a.pledge_id === pledge.id)
@@ -395,7 +420,10 @@ export const getAllPledges = async () => {
       ? new Date(pledge.canceled_date)
       : new Date()
     const totals = calculatePledgeTotals(amounts, endDate)
-    return { ...pledge, amounts, ...totals }
+    const ownerRepledge = pledge.status === 'ACTIVE'
+      ? ownerRepledges.find(r => r.pledge_id === pledge.id && r.status === 'ACTIVE')
+      : ownerRepledges.find(r => r.pledge_id === pledge.id)
+    return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
   })
 }
 
@@ -433,6 +461,11 @@ export const searchPledges = async (query, status = 'ALL') => {
       const allAmounts = await sql`
         SELECT * FROM pledge_amounts_second WHERE pledge_id = ANY(${pledgeIds})
       `
+      
+      // Fetch active owner repledges to get financer names
+      const ownerRepledges = await sql`
+        SELECT pledge_id, financer_name FROM owner_repledges_second WHERE pledge_id = ANY(${pledgeIds}) AND status = 'ACTIVE'
+      `
 
       return pledges.map(pledge => {
         const amounts = allAmounts?.filter(a => a.pledge_id === pledge.id) || []
@@ -440,7 +473,8 @@ export const searchPledges = async (query, status = 'ALL') => {
           ? new Date(pledge.canceled_date)
           : new Date()
         const totals = calculatePledgeTotals(amounts, endDate)
-        return { ...pledge, amounts, ...totals }
+        const ownerRepledge = ownerRepledges?.find(r => r.pledge_id === pledge.id)
+        return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
       })
     } catch (error) {
       console.error('Error searching pledges:', error)
@@ -463,6 +497,7 @@ export const searchPledges = async (query, status = 'ALL') => {
   }
 
   const allAmounts = getStoredData(STORAGE_KEYS.AMOUNTS)
+  const ownerRepledges = getStoredData(OWNER_REPLEDGES_KEY)
 
   return pledges.map(pledge => {
     const amounts = allAmounts.filter(a => a.pledge_id === pledge.id)
@@ -470,7 +505,8 @@ export const searchPledges = async (query, status = 'ALL') => {
       ? new Date(pledge.canceled_date)
       : new Date()
     const totals = calculatePledgeTotals(amounts, endDate)
-    return { ...pledge, amounts, ...totals }
+    const ownerRepledge = ownerRepledges.find(r => r.pledge_id === pledge.id && r.status === 'ACTIVE')
+    return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
   })
 }
 

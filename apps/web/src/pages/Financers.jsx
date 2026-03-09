@@ -466,7 +466,7 @@ export default function Financers() {
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <p className="font-bold text-slate-800">{formatCurrency(financer.total_amount || 0)}</p>
+                      <p className="font-bold text-slate-800">{formatCurrency(financer.active_amount || 0)}</p>
                       <p className="text-xs text-slate-500">{financer.active_count || 0}/{financer.pledge_count || 0} active</p>
                     </div>
                     <ChevronRight className="w-5 h-5 text-slate-300" />

@@ -378,7 +378,7 @@ const OTPLogin = ({ onAuthenticated }) => {
 
         {/* Footer */}
         <div className="text-center mt-4 text-sm text-gray-500">
-          Sri Orusol Jewellers - Secure Pledge Management
+          SUSS - Secure Access
         </div>
       </div>
     </div>

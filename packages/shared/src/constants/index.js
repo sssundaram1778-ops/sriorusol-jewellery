@@ -1,7 +1,7 @@
 // Application constants
-export const APP_NAME = 'Sri Orusol Jewellery'
-export const APP_NAME_TAMIL = 'ஸ்ரீ ஒருசோல் நகை'
-export const APP_TAGLINE = 'Rental Jewels Management'
+export const APP_NAME = 'SUSS'
+export const APP_NAME_TAMIL = ''
+export const APP_TAGLINE = ''
 
 // Colors
 export const COLORS = {

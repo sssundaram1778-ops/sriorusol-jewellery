@@ -1,4 +1,4 @@
-# Sri Orusol Jewellery - Monorepo
+# SUSS - Monorepo
 
 A Progressive Web App (PWA) for managing jewellery rental pledges. Built with Turborepo, React, Vite, and TailwindCSS.
 

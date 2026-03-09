@@ -1,7 +1,7 @@
 {
-  "name": "Sri Orusol Jeweller",
-  "short_name": "Sri Orusol",
-  "description": "Rental Jewels Management System - ஸ்ரீ ஒருசோல் நகை கடை",
+  "name": "SUSS",
+  "short_name": "SUSS",
+  "description": "SUSS",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#EFF6FF",
