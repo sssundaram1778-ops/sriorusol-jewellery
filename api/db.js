@@ -20,11 +20,12 @@ try {
   console.error('Failed to initialize database:', e.message)
 }
 
-// Ensure app_settings table exists
+// Ensure app_settings table exists with all required columns
 const ensureAppSettingsTable = async () => {
   if (appSettingsInitialized || !sql) return false
   
   try {
+    // Create table if not exists
     await sql`
       CREATE TABLE IF NOT EXISTS app_settings (
         id VARCHAR(50) PRIMARY KEY DEFAULT 'main',
@@ -37,6 +38,18 @@ const ensureAppSettingsTable = async () => {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `
+    
+    // Add sai_pin_hash column if not exists
+    try {
+      await sql`
+        ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS sai_pin_hash VARCHAR(255)
+      `
+      console.log('sai_pin_hash column ensured')
+    } catch (e) {
+      // Column might already exist, ignore error
+      console.log('sai_pin_hash column check:', e.message)
+    }
+    
     appSettingsInitialized = true
     console.log('app_settings table ensured')
     return true
