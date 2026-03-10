@@ -86,7 +86,7 @@ export default function Settings() {
   useEffect(() => {
     const checkSaiPinExists = async () => {
       try {
-        const result = await apiCall('getSaiPinStatus')
+        const result = await apiCall('checkSaiPIN')
         setHasSaiPin(result.data?.exists || false)
       } catch (error) {
         console.error('Error checking SAI PIN:', error)
@@ -140,7 +140,7 @@ export default function Settings() {
     
     try {
       // Check if SAI PIN is already set up
-      const result = await apiCall('getSaiPinStatus')
+      const result = await apiCall('checkSaiPIN')
       if (result.data?.exists) {
         setSaiPinMode('verify')
       } else {
