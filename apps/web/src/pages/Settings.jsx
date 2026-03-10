@@ -35,12 +35,15 @@ const apiCall = async (action, data = {}) => {
 export default function Settings() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { activeCategory, setCategory, saiUnlocked, unlockSai } = useCategoryStore()
+  const { activeCategory, setCategory, saiUnlocked, saiVisibleUntil, unlockSai, hideSai } = useCategoryStore()
   const isFirst = activeCategory === 'FIRST'
   
   // Version tap counter for hidden SAI access
   const [versionTapCount, setVersionTapCount] = useState(0)
   const [lastTapTime, setLastTapTime] = useState(0)
+  
+  // Countdown timer state
+  const [countdown, setCountdown] = useState(0)
   
   // SAI PIN modal states
   const [showSaiPinModal, setShowSaiPinModal] = useState(false)
@@ -49,6 +52,34 @@ export default function Settings() {
   const [confirmSaiPin, setConfirmSaiPin] = useState('')
   const [saiPinError, setSaiPinError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  
+  // Auto-hide SAI timer effect
+  useEffect(() => {
+    if (!saiUnlocked || !saiVisibleUntil) {
+      setCountdown(0)
+      return
+    }
+    
+    // Update countdown every second
+    const updateCountdown = () => {
+      const remaining = Math.max(0, Math.ceil((saiVisibleUntil - Date.now()) / 1000))
+      setCountdown(remaining)
+      
+      // Auto-hide when timer expires
+      if (remaining <= 0) {
+        hideSai()
+        toast('SAI hidden - tap version 5x to unlock again', { icon: '🔒', duration: 2000 })
+      }
+    }
+    
+    // Initial update
+    updateCountdown()
+    
+    // Set interval
+    const intervalId = setInterval(updateCountdown, 1000)
+    
+    return () => clearInterval(intervalId)
+  }, [saiUnlocked, saiVisibleUntil, hideSai])
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout? You will need to enter PIN and master password again.')) {
@@ -76,11 +107,11 @@ export default function Settings() {
       toast(`${5 - versionTapCount} more taps...`, { duration: 1000, icon: '🔐' })
     }
     
-    // Unlock SAI after 5 taps
+    // Unlock SAI after 5 taps (starts 60-second timer)
     if (versionTapCount >= 4) {
       setVersionTapCount(0)
       unlockSai()
-      toast.success('🔓 SAI Mode Unlocked', { duration: 2000 })
+      toast.success('🔓 SAI Unlocked - 60 seconds to select', { duration: 3000 })
     }
   }
   
@@ -198,10 +229,17 @@ export default function Settings() {
               <div className={`w-12 h-12 ${isFirst ? 'bg-gradient-to-br from-blue-500 to-blue-600' : 'bg-gradient-to-br from-purple-500 to-purple-600'} rounded-xl flex items-center justify-center shadow-md`}>
                 <Layers className="w-6 h-6 text-white" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="font-bold text-slate-800">Pledge Category</h3>
                 <p className="text-xs text-slate-500">Select which category to work with</p>
               </div>
+              {/* Countdown timer - only show when SAI is unlocked but not yet selected */}
+              {saiUnlocked && activeCategory === 'FIRST' && countdown > 0 && (
+                <div className="flex items-center gap-2 bg-orange-100 px-3 py-1.5 rounded-full">
+                  <Clock className="w-4 h-4 text-orange-600" />
+                  <span className="text-sm font-bold text-orange-600">{countdown}s</span>
+                </div>
+              )}
             </div>
             
             <div className="grid grid-cols-2 gap-3">
@@ -238,22 +276,26 @@ export default function Settings() {
               {/* Second Category - SAI (requires PIN) */}
               <button
                 onClick={handleSaiClick}
-                className={`p-4 rounded-xl border-2 transition-all ${
+                className={`p-4 rounded-xl border-2 transition-all relative ${
                   activeCategory === 'SECOND'
                     ? 'border-purple-500 bg-purple-50 shadow-lg shadow-purple-500/20'
-                    : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                    : countdown > 0 
+                      ? 'border-orange-400 bg-orange-50 animate-pulse'
+                      : 'border-slate-200 bg-slate-50 hover:border-slate-300'
                 }`}
               >
                 <div className="flex flex-col items-center gap-2">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                     activeCategory === 'SECOND' 
                       ? 'bg-purple-500 text-white' 
-                      : 'bg-slate-200 text-slate-500'
+                      : countdown > 0
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-slate-200 text-slate-500'
                   }`}>
                     <Lock className="w-5 h-5" />
                   </div>
                   <span className={`font-bold ${
-                    activeCategory === 'SECOND' ? 'text-purple-700' : 'text-slate-600'
+                    activeCategory === 'SECOND' ? 'text-purple-700' : countdown > 0 ? 'text-orange-700' : 'text-slate-600'
                   }`}>
                     SAI
                   </span>
@@ -267,7 +309,10 @@ export default function Settings() {
             </div>
             
             <p className="text-xs text-slate-400 text-center mt-4">
-              Each category has separate pledges, financers, and data
+              {countdown > 0 
+                ? `Select SAI within ${countdown} seconds or it will hide`
+                : 'Each category has separate pledges, financers, and data'
+              }
             </p>
           </div>
         )}

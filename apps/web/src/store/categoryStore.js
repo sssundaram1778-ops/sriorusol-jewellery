@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+// SAI visibility timeout (60 seconds)
+const SAI_VISIBILITY_TIMEOUT = 60 * 1000
+
 export const useCategoryStore = create(
   persist(
     (set, get) => ({
@@ -10,24 +13,28 @@ export const useCategoryStore = create(
       // SAI unlocked state (not persisted - resets on refresh)
       saiUnlocked: false,
       
+      // Timestamp when SAI visibility expires (for auto-hide)
+      saiVisibleUntil: null,
+      
       // Set specific category
       setCategory: (category) => {
-        // If switching to SS (FIRST), hide SAI again
+        // If switching to SS (FIRST), hide SAI again and require 5 taps
         if (category === 'FIRST') {
-          set({ activeCategory: category, saiUnlocked: false })
+          set({ activeCategory: category, saiUnlocked: false, saiVisibleUntil: null })
         } else {
-          set({ activeCategory: category })
+          // Entering SAI - clear the timer since user selected it
+          set({ activeCategory: category, saiVisibleUntil: null })
         }
       },
       
       // Toggle between categories
       toggleCategory: () => set((state) => {
         const newCategory = state.activeCategory === 'FIRST' ? 'SECOND' : 'FIRST'
-        // If switching to SS, hide SAI
+        // If switching to SS, hide SAI and require 5 taps again
         if (newCategory === 'FIRST') {
-          return { activeCategory: newCategory, saiUnlocked: false }
+          return { activeCategory: newCategory, saiUnlocked: false, saiVisibleUntil: null }
         }
-        return { activeCategory: newCategory }
+        return { activeCategory: newCategory, saiVisibleUntil: null }
       }),
       
       // Check if current category is First
@@ -39,14 +46,28 @@ export const useCategoryStore = create(
       // Get category display name
       getCategoryName: () => get().activeCategory === 'FIRST' ? 'SS' : 'SAI',
       
-      // Unlock SAI visibility (after tapping version 5 times)
-      unlockSai: () => set({ saiUnlocked: true }),
+      // Unlock SAI visibility with 60-second timer
+      unlockSai: () => set({ 
+        saiUnlocked: true, 
+        saiVisibleUntil: Date.now() + SAI_VISIBILITY_TIMEOUT 
+      }),
       
       // Lock SAI visibility
-      lockSai: () => set({ saiUnlocked: false, activeCategory: 'FIRST' }),
+      lockSai: () => set({ saiUnlocked: false, activeCategory: 'FIRST', saiVisibleUntil: null }),
+      
+      // Check if SAI is still visible (within timeout)
+      isSaiVisible: () => {
+        const state = get()
+        if (!state.saiUnlocked) return false
+        if (!state.saiVisibleUntil) return state.saiUnlocked
+        return Date.now() < state.saiVisibleUntil
+      },
+      
+      // Hide SAI (timer expired)
+      hideSai: () => set({ saiUnlocked: false, saiVisibleUntil: null }),
       
       // Reset to default (SS) - called on app start
-      resetToDefault: () => set({ activeCategory: 'FIRST', saiUnlocked: false }),
+      resetToDefault: () => set({ activeCategory: 'FIRST', saiUnlocked: false, saiVisibleUntil: null }),
       
       // Get category colors
       getCategoryColors: () => {
