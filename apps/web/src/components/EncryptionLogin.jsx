@@ -242,7 +242,7 @@ const EncryptionLogin = ({ onAuthenticated }) => {
 
         {/* Footer */}
         <div className="text-center mt-4 text-sm text-gray-500">
-          SUSS - Secure Access
+          Sri Orusol Jewellers - Secure Access
         </div>
       </div>
     </div>

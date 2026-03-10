@@ -3,8 +3,6 @@ import autoTable from 'jspdf-autotable'
 import { format } from 'date-fns'
 import { calculatePledgeTotals } from './database'
 import { Capacitor } from '@capacitor/core'
-import { Filesystem, Directory } from '@capacitor/filesystem'
-import { Share } from '@capacitor/share'
 
 // Check if running on native platform (Android/iOS)
 const isNative = () => {
@@ -18,53 +16,29 @@ const isNative = () => {
 // Universal PDF save function - works on both web and native
 const savePDF = async (doc, filename) => {
   if (isNative()) {
+    // For Android APK: Use JavaScript interface to native code
     try {
-      // Convert PDF to base64
-      const pdfBase64 = doc.output('datauristring').split(',')[1]
+      // Get PDF as base64 data URI
+      const pdfDataUri = doc.output('datauristring')
       
-      // Save to Downloads folder on Android
-      const savedFile = await Filesystem.writeFile({
-        path: filename,
-        data: pdfBase64,
-        directory: Directory.Documents,
-        recursive: true
-      })
-      
-      console.log('PDF saved to:', savedFile.uri)
-      
-      // Share the file so user can open or save it
-      await Share.share({
-        title: filename,
-        text: `PDF Report: ${filename}`,
-        url: savedFile.uri,
-        dialogTitle: 'Save or Share PDF'
-      })
-      
-      return true
+      // Check if Android interface is available
+      if (window.AndroidPdfDownloader && window.AndroidPdfDownloader.downloadPdf) {
+        // Call native Android method to save PDF
+        window.AndroidPdfDownloader.downloadPdf(pdfDataUri, filename)
+        return true
+      } else {
+        // Fallback: standard save
+        doc.save(filename)
+        return true
+      }
     } catch (error) {
-      console.error('PDF save error:', error)
-      
-      // Fallback: Try blob download
+      console.error('[PDF] Error:', error)
+      // Fallback: standard save
       try {
-        const pdfBlob = doc.output('blob')
-        const pdfUrl = URL.createObjectURL(pdfBlob)
-        
-        const link = document.createElement('a')
-        link.href = pdfUrl
-        link.download = filename
-        link.target = '_blank'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        
-        setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000)
+        doc.save(filename)
         return true
-      } catch (e2) {
-        console.error('Fallback download error:', e2)
-        // Final fallback - open data URI
-        const dataUri = doc.output('datauristring')
-        window.open(dataUri, '_blank')
-        return true
+      } catch (e) {
+        return false
       }
     }
   } else {
@@ -139,7 +113,7 @@ export const generatePledgePDF = (pledge, language = 'en') => {
   doc.setTextColor(...COLORS.white)
   doc.setFontSize(20)
   doc.setFont(undefined, 'bold')
-  doc.text('SUSS', margin, 14)
+  doc.text('Sri Orusol Jewellers', margin, 14)
   
   // Tagline
   doc.setFontSize(9)
@@ -476,13 +450,13 @@ export const generatePledgePDF = (pledge, language = 'en') => {
   doc.setFontSize(9)
   doc.setTextColor(...COLORS.text)
   doc.setFont(undefined, 'italic')
-  doc.text('Thank you for choosing SUSS!', pageWidth / 2, footerY + 1, { align: 'center' })
+  doc.text('Thank you for choosing Sri Orusol Jewellers!', pageWidth / 2, footerY + 1, { align: 'center' })
   
   // Contact & timestamp
   doc.setFontSize(7)
   doc.setTextColor(...COLORS.textMuted)
   doc.setFont(undefined, 'normal')
-  doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}  |  Contact: +91-XXXXXXXXXX  |  © SUSS`, pageWidth / 2, footerY + 9, { align: 'center' })
+  doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}  |  Contact: +91-XXXXXXXXXX  |  © Sri Orusol Jewellers`, pageWidth / 2, footerY + 9, { align: 'center' })
   
   return doc
 }
@@ -519,7 +493,7 @@ export const downloadFinancerPDF = async (financerName, financerPlace, pledges) 
   doc.setTextColor(...COLORS.white)
   doc.setFontSize(22)
   doc.setFont(undefined, 'bold')
-  doc.text('SUSS', margin, 16)
+  doc.text('Sri Orusol Jewellers', margin, 16)
   
   // Report subtitle
   doc.setFontSize(11)
@@ -677,7 +651,7 @@ export const downloadFinancerPDF = async (financerName, financerPlace, pledges) 
   doc.setFontSize(8)
   doc.setTextColor(...COLORS.textMuted)
   doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}`, margin, footerY)
-  doc.text('SUSS', pageWidth / 2, footerY, { align: 'center' })
+  doc.text('Sri Orusol Jewellers', pageWidth / 2, footerY, { align: 'center' })
   doc.text(`Page 1 of 1`, pageWidth - margin, footerY, { align: 'right' })
   
   await savePDF(doc, `${financerName.replace(/[^a-zA-Z0-9]/g, '_')}_Report.pdf`)
@@ -703,7 +677,7 @@ export const downloadAllPledgesPDF = async (pledges, reportTitle = 'All Pledges'
   doc.setTextColor(...COLORS.white)
   doc.setFontSize(22)
   doc.setFont(undefined, 'bold')
-  doc.text('SUSS', margin, 16)
+  doc.text('Sri Orusol Jewellers', margin, 16)
   
   // Report subtitle
   doc.setFontSize(11)
@@ -859,7 +833,7 @@ export const downloadAllPledgesPDF = async (pledges, reportTitle = 'All Pledges'
   doc.setFontSize(8)
   doc.setTextColor(...COLORS.textMuted)
   doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}`, margin, footerY)
-  doc.text('SUSS', pageWidth / 2, footerY, { align: 'center' })
+  doc.text('Sri Orusol Jewellers', pageWidth / 2, footerY, { align: 'center' })
   doc.text(`Total: ${pledges.length} records`, pageWidth - margin, footerY, { align: 'right' })
   
   const filename = reportTitle.replace(/\s+/g, '_')

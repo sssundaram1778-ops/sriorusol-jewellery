@@ -65,7 +65,7 @@ export default function Home() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-slate-800 tracking-tight">SUSS</h1>
+                <h1 className="text-lg font-bold text-slate-800 tracking-tight">Sri Orusol Jewellers</h1>
                 <CategoryBadge showLabel={false} />
               </div>
               <p className="text-[11px] text-slate-500 font-medium"></p>

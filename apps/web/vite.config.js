@@ -12,9 +12,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.svg'],
       manifest: {
-        name: 'SUSS - Rental Management',
-        short_name: 'SUSS',
-        description: 'SUSS',
+        name: 'Sri Orusol Jewellers',
+        short_name: 'Sri Orusol',
+        description: 'Sri Orusol Jewellers',
         theme_color: '#2563EB',
         background_color: '#EFF6FF',
         display: 'standalone',
