@@ -3,6 +3,8 @@ import autoTable from 'jspdf-autotable'
 import { format } from 'date-fns'
 import { calculatePledgeTotals } from './database'
 import { Capacitor } from '@capacitor/core'
+import { Filesystem, Directory } from '@capacitor/filesystem'
+import { Share } from '@capacitor/share'
 
 // Check if running on native platform (Android/iOS)
 const isNative = () => {
@@ -14,38 +16,61 @@ const isNative = () => {
 }
 
 // Universal PDF save function - works on both web and native
-const savePDF = (doc, filename) => {
+const savePDF = async (doc, filename) => {
   if (isNative()) {
-    // For native apps, use blob URL and open in new window for download
     try {
-      const pdfBlob = doc.output('blob')
-      const pdfUrl = URL.createObjectURL(pdfBlob)
+      // Convert PDF to base64
+      const pdfBase64 = doc.output('datauristring').split(',')[1]
       
-      // Create a download link
-      const link = document.createElement('a')
-      link.href = pdfUrl
-      link.download = filename
-      link.target = '_blank'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      // Save to Downloads folder on Android
+      const savedFile = await Filesystem.writeFile({
+        path: filename,
+        data: pdfBase64,
+        directory: Directory.Documents,
+        recursive: true
+      })
       
-      // Also try opening in new tab as fallback
-      setTimeout(() => {
-        window.open(pdfUrl, '_blank')
-      }, 100)
+      console.log('PDF saved to:', savedFile.uri)
       
-      // Clean up after delay
-      setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000)
+      // Share the file so user can open or save it
+      await Share.share({
+        title: filename,
+        text: `PDF Report: ${filename}`,
+        url: savedFile.uri,
+        dialogTitle: 'Save or Share PDF'
+      })
+      
+      return true
     } catch (error) {
-      console.error('PDF download error:', error)
-      // Final fallback - use data URI
-      const dataUri = doc.output('datauristring')
-      window.open(dataUri, '_blank')
+      console.error('PDF save error:', error)
+      
+      // Fallback: Try blob download
+      try {
+        const pdfBlob = doc.output('blob')
+        const pdfUrl = URL.createObjectURL(pdfBlob)
+        
+        const link = document.createElement('a')
+        link.href = pdfUrl
+        link.download = filename
+        link.target = '_blank'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000)
+        return true
+      } catch (e2) {
+        console.error('Fallback download error:', e2)
+        // Final fallback - open data URI
+        const dataUri = doc.output('datauristring')
+        window.open(dataUri, '_blank')
+        return true
+      }
     }
   } else {
     // Standard browser download
     doc.save(filename)
+    return true
   }
 }
 
@@ -462,9 +487,9 @@ export const generatePledgePDF = (pledge, language = 'en') => {
   return doc
 }
 
-export const downloadPledgePDF = (pledge, language = 'en') => {
+export const downloadPledgePDF = async (pledge, language = 'en') => {
   const doc = generatePledgePDF(pledge, language)
-  savePDF(doc, `Pledge-${pledge.pledge_no}.pdf`)
+  await savePDF(doc, `Pledge-${pledge.pledge_no}.pdf`)
 }
 
 export const printPledgePDF = (pledge, language = 'en') => {
@@ -474,7 +499,7 @@ export const printPledgePDF = (pledge, language = 'en') => {
 }
 
 // Export financer data to PDF - Professional Modern Layout
-export const downloadFinancerPDF = (financerName, financerPlace, pledges) => {
+export const downloadFinancerPDF = async (financerName, financerPlace, pledges) => {
   const doc = new jsPDF('l') // Landscape
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
@@ -655,11 +680,11 @@ export const downloadFinancerPDF = (financerName, financerPlace, pledges) => {
   doc.text('SUSS', pageWidth / 2, footerY, { align: 'center' })
   doc.text(`Page 1 of 1`, pageWidth - margin, footerY, { align: 'right' })
   
-  savePDF(doc, `${financerName.replace(/[^a-zA-Z0-9]/g, '_')}_Report.pdf`)
+  await savePDF(doc, `${financerName.replace(/[^a-zA-Z0-9]/g, '_')}_Report.pdf`)
 }
 
 // Export all pledges to PDF - Professional Modern Layout (matching Financer PDF style)
-export const downloadAllPledgesPDF = (pledges, reportTitle = 'All Pledges') => {
+export const downloadAllPledgesPDF = async (pledges, reportTitle = 'All Pledges') => {
   const doc = new jsPDF('l') // Landscape
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
@@ -838,5 +863,5 @@ export const downloadAllPledgesPDF = (pledges, reportTitle = 'All Pledges') => {
   doc.text(`Total: ${pledges.length} records`, pageWidth - margin, footerY, { align: 'right' })
   
   const filename = reportTitle.replace(/\s+/g, '_')
-  savePDF(doc, `${filename}_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`)
+  await savePDF(doc, `${filename}_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`)
 }
