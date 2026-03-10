@@ -500,34 +500,35 @@ export default async function handler(req, res) {
 
       case 'setupSaiPIN':
         // Setup or update SAI PIN
-        console.log('setupSaiPIN called')
+        console.log('setupSaiPIN called with data:', data)
         
-        // Ensure table has sai_pin_hash column
-        try {
-          await sql`ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS sai_pin_hash VARCHAR(255)`
-        } catch (e) {
-          console.log('Column may already exist:', e.message)
+        if (!data.sai_pin_hash) {
+          return res.status(400).json({ error: 'PIN hash is required' })
         }
         
-        // Check if settings exist
-        const [existingSaiSettings] = await sql`
-          SELECT id FROM app_settings WHERE id = 'main' LIMIT 1
-        `
+        // Ensure table and column exist
+        try {
+          await sql`ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS sai_pin_hash VARCHAR(255)`
+          console.log('Column check passed')
+        } catch (e) {
+          console.log('Column alter error (may already exist):', e.message)
+        }
         
-        if (existingSaiSettings) {
-          await sql`
-            UPDATE app_settings SET
-              sai_pin_hash = ${data.sai_pin_hash},
-              updated_at = NOW()
-            WHERE id = 'main'
-          `
-        } else {
+        // Use UPSERT to simplify
+        try {
           await sql`
             INSERT INTO app_settings (id, sai_pin_hash, created_at, updated_at)
             VALUES ('main', ${data.sai_pin_hash}, NOW(), NOW())
+            ON CONFLICT (id) DO UPDATE SET
+              sai_pin_hash = EXCLUDED.sai_pin_hash,
+              updated_at = NOW()
           `
+          console.log('SAI PIN saved successfully')
+          return res.json({ success: true })
+        } catch (upsertError) {
+          console.error('Upsert error:', upsertError.message)
+          return res.status(500).json({ error: 'Failed to save PIN: ' + upsertError.message })
         }
-        return res.json({ success: true })
 
       case 'verifySaiPIN':
         // Verify SAI PIN
