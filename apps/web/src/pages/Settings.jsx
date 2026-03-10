@@ -235,9 +235,9 @@ export default function Settings() {
               </div>
               {/* Countdown timer - only show when SAI is unlocked but not yet selected */}
               {saiUnlocked && activeCategory === 'FIRST' && countdown > 0 && (
-                <div className="flex items-center gap-2 bg-orange-100 px-3 py-1.5 rounded-full">
-                  <Clock className="w-4 h-4 text-orange-600" />
-                  <span className="text-sm font-bold text-orange-600">{countdown}s</span>
+                <div className="flex items-center gap-2 bg-purple-100 px-3 py-1.5 rounded-full">
+                  <Clock className="w-4 h-4 text-purple-600" />
+                  <span className="text-sm font-bold text-purple-600">{countdown}s</span>
                 </div>
               )}
             </div>
@@ -280,7 +280,7 @@ export default function Settings() {
                   activeCategory === 'SECOND'
                     ? 'border-purple-500 bg-purple-50 shadow-lg shadow-purple-500/20'
                     : countdown > 0 
-                      ? 'border-orange-400 bg-orange-50 animate-pulse'
+                      ? 'border-purple-400 bg-purple-50 animate-pulse'
                       : 'border-slate-200 bg-slate-50 hover:border-slate-300'
                 }`}
               >
@@ -289,13 +289,13 @@ export default function Settings() {
                     activeCategory === 'SECOND' 
                       ? 'bg-purple-500 text-white' 
                       : countdown > 0
-                        ? 'bg-orange-500 text-white'
+                        ? 'bg-purple-500 text-white'
                         : 'bg-slate-200 text-slate-500'
                   }`}>
                     <Lock className="w-5 h-5" />
                   </div>
                   <span className={`font-bold ${
-                    activeCategory === 'SECOND' ? 'text-purple-700' : countdown > 0 ? 'text-orange-700' : 'text-slate-600'
+                    activeCategory === 'SECOND' ? 'text-purple-700' : countdown > 0 ? 'text-purple-700' : 'text-slate-600'
                   }`}>
                     SAI
                   </span>
