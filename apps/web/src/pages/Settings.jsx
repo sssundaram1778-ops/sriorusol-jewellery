@@ -47,11 +47,12 @@ export default function Settings() {
   
   // SAI PIN modal states
   const [showSaiPinModal, setShowSaiPinModal] = useState(false)
-  const [saiPinMode, setSaiPinMode] = useState('check') // 'check', 'setup', 'verify'
+  const [saiPinMode, setSaiPinMode] = useState('check') // 'check', 'setup', 'verify', 'reset_verify', 'reset_new'
   const [saiPin, setSaiPin] = useState('')
   const [confirmSaiPin, setConfirmSaiPin] = useState('')
   const [saiPinError, setSaiPinError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [hasSaiPin, setHasSaiPin] = useState(false)
   
   // Auto-hide SAI timer effect
   useEffect(() => {
@@ -80,6 +81,19 @@ export default function Settings() {
     
     return () => clearInterval(intervalId)
   }, [saiUnlocked, saiVisibleUntil, hideSai])
+
+  // Check if SAI PIN exists on mount (for showing reset button)
+  useEffect(() => {
+    const checkSaiPinExists = async () => {
+      try {
+        const result = await apiCall('getSaiPinStatus')
+        setHasSaiPin(result.data?.exists || false)
+      } catch (error) {
+        console.error('Error checking SAI PIN:', error)
+      }
+    }
+    checkSaiPinExists()
+  }, [])
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout? You will need to enter PIN and master password again.')) {
@@ -180,9 +194,18 @@ export default function Settings() {
       const result = await apiCall('verifySaiPIN', { sai_pin_hash: pinHash })
       
       if (result.data?.valid) {
-        toast.success('Access granted')
-        setShowSaiPinModal(false)
-        setCategory('SECOND')
+        // Check if this is reset flow or normal access
+        if (saiPinMode === 'reset_verify') {
+          // Move to set new PIN
+          setSaiPin('')
+          setConfirmSaiPin('')
+          setSaiPinMode('reset_new')
+          toast.success('PIN verified. Set your new PIN.')
+        } else {
+          toast.success('Access granted')
+          setShowSaiPinModal(false)
+          setCategory('SECOND')
+        }
       } else {
         setSaiPinError('Incorrect PIN')
         setSaiPin('')
@@ -190,6 +213,42 @@ export default function Settings() {
     } catch (error) {
       console.error('Error verifying SAI PIN:', error)
       setSaiPinError('Verification failed. Try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  // Handle Reset SAI PIN button click
+  const handleResetSaiPinClick = () => {
+    setShowSaiPinModal(true)
+    setSaiPin('')
+    setConfirmSaiPin('')
+    setSaiPinError('')
+    setSaiPinMode('reset_verify')
+  }
+  
+  // Set new PIN after reset verification
+  const handleSetNewPin = async () => {
+    if (saiPin.length < 4) {
+      setSaiPinError('PIN must be at least 4 digits')
+      return
+    }
+    if (saiPin !== confirmSaiPin) {
+      setSaiPinError('PINs do not match')
+      return
+    }
+    
+    setIsLoading(true)
+    try {
+      const pinHash = await hashSaiPin(saiPin)
+      await apiCall('setupSaiPIN', { sai_pin_hash: pinHash })
+      
+      toast.success('SAI PIN reset successfully')
+      setShowSaiPinModal(false)
+      setHasSaiPin(true)
+    } catch (error) {
+      console.error('Error resetting SAI PIN:', error)
+      setSaiPinError('Failed to reset PIN. Try again.')
     } finally {
       setIsLoading(false)
     }
@@ -394,6 +453,17 @@ export default function Settings() {
               <span className="text-xs bg-emerald-500 text-white px-2 py-1 rounded-full font-bold">ACTIVE</span>
             </div>
             
+            {/* Reset SAI PIN - Only show if PIN exists */}
+            {hasSaiPin && (
+              <button
+                onClick={handleResetSaiPinClick}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl text-purple-600 font-medium transition-colors"
+              >
+                <Lock className="w-5 h-5" />
+                <span>Reset SAI PIN</span>
+              </button>
+            )}
+            
             <button
               onClick={handleLogout}
               className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl text-red-600 font-medium transition-colors"
@@ -453,7 +523,9 @@ export default function Settings() {
               <div className="flex items-center gap-3">
                 <Lock className="w-5 h-5 text-white" />
                 <h3 className="text-lg font-bold text-white">
-                  {saiPinMode === 'setup' ? 'Setup SAI PIN' : 'Enter SAI PIN'}
+                  {saiPinMode === 'setup' ? 'Setup SAI PIN' : 
+                   saiPinMode === 'reset_verify' ? 'Reset SAI PIN' :
+                   saiPinMode === 'reset_new' ? 'New SAI PIN' : 'Enter SAI PIN'}
                 </h3>
               </div>
               <button
@@ -472,10 +544,10 @@ export default function Settings() {
                 </div>
               ) : (
                 <>
-                  {saiPinMode === 'setup' ? (
+                  {saiPinMode === 'setup' || saiPinMode === 'reset_new' ? (
                     <>
                       <p className="text-sm text-slate-600 text-center">
-                        Create a 4-digit PIN for SAI access
+                        {saiPinMode === 'reset_new' ? 'Create your new 4-digit PIN' : 'Create a 4-digit PIN for SAI access'}
                       </p>
                       <div>
                         <label className="text-sm font-medium text-slate-700 mb-1 block">New PIN</label>
@@ -490,6 +562,7 @@ export default function Settings() {
                           }}
                           placeholder="Enter 4-6 digit PIN"
                           className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-center text-2xl tracking-widest font-mono focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none"
+                          autoFocus
                         />
                       </div>
                       <div>
@@ -511,7 +584,7 @@ export default function Settings() {
                   ) : (
                     <>
                       <p className="text-sm text-slate-600 text-center">
-                        Enter your SAI PIN to access
+                        {saiPinMode === 'reset_verify' ? 'Enter your current SAI PIN to reset' : 'Enter your SAI PIN to access'}
                       </p>
                       <div>
                         <input
@@ -536,7 +609,11 @@ export default function Settings() {
                   )}
                   
                   <button
-                    onClick={saiPinMode === 'setup' ? handleSetupSaiPin : handleVerifySaiPin}
+                    onClick={
+                      saiPinMode === 'setup' ? handleSetupSaiPin : 
+                      saiPinMode === 'reset_new' ? handleSetNewPin :
+                      handleVerifySaiPin
+                    }
                     disabled={isLoading}
                     className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
@@ -545,7 +622,9 @@ export default function Settings() {
                     ) : (
                       <>
                         <Lock className="w-4 h-4" />
-                        {saiPinMode === 'setup' ? 'Create PIN' : 'Unlock'}
+                        {saiPinMode === 'setup' ? 'Create PIN' : 
+                         saiPinMode === 'reset_new' ? 'Save New PIN' :
+                         saiPinMode === 'reset_verify' ? 'Verify & Reset' : 'Unlock'}
                       </>
                     )}
                   </button>
