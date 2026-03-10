@@ -172,6 +172,7 @@ export default function Settings() {
       
       toast.success('SAI PIN created successfully')
       setShowSaiPinModal(false)
+      setHasSaiPin(true) // Update state so Reset button appears
       setCategory('SECOND')
     } catch (error) {
       console.error('Error setting up SAI PIN:', error)

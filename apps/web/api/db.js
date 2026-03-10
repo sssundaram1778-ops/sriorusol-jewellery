@@ -492,6 +492,7 @@ export default async function handler(req, res) {
 
       // ============ SAI PIN (Second Category) ============
       case 'checkSaiPIN':
+      case 'getSaiPinStatus':
         // Check if SAI PIN exists
         const [saiPinCheck] = await sql`
           SELECT sai_pin_hash FROM app_settings WHERE id = 'main' LIMIT 1
