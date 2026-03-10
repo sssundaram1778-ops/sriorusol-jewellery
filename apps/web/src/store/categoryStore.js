@@ -22,7 +22,7 @@ export const useCategoryStore = create(
       isSecond: () => get().activeCategory === 'SECOND',
       
       // Get category display name
-      getCategoryName: () => get().activeCategory === 'FIRST' ? 'First' : 'Second',
+      getCategoryName: () => get().activeCategory === 'FIRST' ? 'SS' : 'SAI',
       
       // Get category colors
       getCategoryColors: () => {

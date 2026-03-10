@@ -2,6 +2,52 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { format } from 'date-fns'
 import { calculatePledgeTotals } from './database'
+import { Capacitor } from '@capacitor/core'
+
+// Check if running on native platform (Android/iOS)
+const isNative = () => {
+  try {
+    return Capacitor.isNativePlatform()
+  } catch {
+    return false
+  }
+}
+
+// Universal PDF save function - works on both web and native
+const savePDF = (doc, filename) => {
+  if (isNative()) {
+    // For native apps, use blob URL and open in new window for download
+    try {
+      const pdfBlob = doc.output('blob')
+      const pdfUrl = URL.createObjectURL(pdfBlob)
+      
+      // Create a download link
+      const link = document.createElement('a')
+      link.href = pdfUrl
+      link.download = filename
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Also try opening in new tab as fallback
+      setTimeout(() => {
+        window.open(pdfUrl, '_blank')
+      }, 100)
+      
+      // Clean up after delay
+      setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000)
+    } catch (error) {
+      console.error('PDF download error:', error)
+      // Final fallback - use data URI
+      const dataUri = doc.output('datauristring')
+      window.open(dataUri, '_blank')
+    }
+  } else {
+    // Standard browser download
+    doc.save(filename)
+  }
+}
 
 // Currency formatter for PDF (uses Rs. instead of ₹ for better PDF compatibility)
 const formatCurrencyPDF = (amount) => {
@@ -418,7 +464,7 @@ export const generatePledgePDF = (pledge, language = 'en') => {
 
 export const downloadPledgePDF = (pledge, language = 'en') => {
   const doc = generatePledgePDF(pledge, language)
-  doc.save(`Pledge-${pledge.pledge_no}.pdf`)
+  savePDF(doc, `Pledge-${pledge.pledge_no}.pdf`)
 }
 
 export const printPledgePDF = (pledge, language = 'en') => {
@@ -609,7 +655,7 @@ export const downloadFinancerPDF = (financerName, financerPlace, pledges) => {
   doc.text('SUSS', pageWidth / 2, footerY, { align: 'center' })
   doc.text(`Page 1 of 1`, pageWidth - margin, footerY, { align: 'right' })
   
-  doc.save(`${financerName.replace(/[^a-zA-Z0-9]/g, '_')}_Report.pdf`)
+  savePDF(doc, `${financerName.replace(/[^a-zA-Z0-9]/g, '_')}_Report.pdf`)
 }
 
 // Export all pledges to PDF - Professional Modern Layout (matching Financer PDF style)
@@ -792,5 +838,5 @@ export const downloadAllPledgesPDF = (pledges, reportTitle = 'All Pledges') => {
   doc.text(`Total: ${pledges.length} records`, pageWidth - margin, footerY, { align: 'right' })
   
   const filename = reportTitle.replace(/\s+/g, '_')
-  doc.save(`${filename}_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`)
+  savePDF(doc, `${filename}_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`)
 }

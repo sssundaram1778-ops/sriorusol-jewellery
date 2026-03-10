@@ -1,4 +1,4 @@
-package com.sriorusol.jeweller;
+package com.suss.app;
 
 import com.getcapacitor.BridgeActivity;
 

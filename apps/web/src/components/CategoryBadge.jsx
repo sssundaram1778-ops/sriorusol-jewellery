@@ -15,7 +15,7 @@ export default function CategoryBadge({ className = '', showLabel = true }) {
           : 'bg-purple-500 text-white'
         }
       `}>
-        {activeCategory}
+        {isFirst ? 'SS' : 'SAI'}
       </span>
       {showLabel && (
         <span className={`text-xs font-medium ${isFirst ? 'text-blue-600' : 'text-purple-600'}`}>

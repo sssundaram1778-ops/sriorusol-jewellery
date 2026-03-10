@@ -1,4 +1,5 @@
 import { RefreshCw } from 'lucide-react'
+import { useCategoryStore } from '../store/categoryStore'
 
 export default function LoadingSpinner({ 
   size = 'md', 
@@ -6,6 +7,9 @@ export default function LoadingSpinner({
   fullScreen = false,
   className = ''
 }) {
+  const { activeCategory } = useCategoryStore()
+  const isFirst = activeCategory === 'FIRST'
+  
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-8 h-8',
@@ -14,7 +18,7 @@ export default function LoadingSpinner({
 
   const spinner = (
     <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
-      <RefreshCw className={`${sizeClasses[size]} text-blue-600 animate-spin`} />
+      <RefreshCw className={`${sizeClasses[size]} ${isFirst ? 'text-blue-600' : 'text-purple-600'} animate-spin`} />
       {text && <p className="text-sm text-slate-500 font-medium">{text}</p>}
     </div>
   )

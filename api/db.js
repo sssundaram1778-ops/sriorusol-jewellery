@@ -235,6 +235,44 @@ export default async function handler(req, res) {
         }))
         return res.json({ data: mappedPledges })
 
+      // ============ SAI (SECOND) CATEGORY ENDPOINTS ============
+      case 'getFinancerListSecond':
+        // Get list of financers with totals - from owner_repledges_second table
+        const financerListSecond = await sql`
+          SELECT 
+            MAX(TRIM(o.financer_name)) as name, 
+            MAX(o.financer_place) as place,
+            SUM(o.amount) as total_amount,
+            SUM(CASE WHEN o.status = 'ACTIVE' AND p.status = 'ACTIVE' THEN o.amount ELSE 0 END) as active_amount,
+            SUM(CASE WHEN o.status = 'CLOSED' OR p.status = 'CLOSED' THEN o.amount ELSE 0 END) as closed_amount,
+            COUNT(*) as pledge_count,
+            COUNT(CASE WHEN o.status = 'ACTIVE' AND p.status = 'ACTIVE' THEN 1 END) as active_count,
+            COUNT(CASE WHEN o.status = 'CLOSED' OR p.status = 'CLOSED' THEN 1 END) as closed_count
+          FROM owner_repledges_second o
+          LEFT JOIN pledges_second p ON o.pledge_id = p.id
+          GROUP BY LOWER(TRIM(o.financer_name))
+          ORDER BY MAX(TRIM(o.financer_name)) ASC
+        `
+        return res.json({ data: financerListSecond })
+
+      case 'getOwnerRepledgesByFinancerSecond':
+        // Get pledges by financer name - SAI category
+        const financerPledgesSecond = await sql`
+          SELECT o.*, 
+            p.pledge_no, p.customer_name, p.jewels_details, p.gross_weight, p.net_weight, p.date as pledge_date, p.phone_number, p.status as pledge_status, p.no_of_items,
+            CASE WHEN p.status = 'CLOSED' THEN 'CLOSED' ELSE o.status END as effective_status
+          FROM owner_repledges_second o
+          LEFT JOIN pledges_second p ON o.pledge_id = p.id
+          WHERE LOWER(TRIM(o.financer_name)) = LOWER(TRIM(${data.financer_name}))
+          ORDER BY o.created_at DESC
+        `
+        // Map effective_status to status
+        const mappedPledgesSecond = (financerPledgesSecond || []).map(r => ({
+          ...r,
+          status: r.effective_status || r.status
+        }))
+        return res.json({ data: mappedPledgesSecond })
+
       // ============ PLEDGE AMOUNTS (Financer) ============
       case 'getPledgeAmounts':
         const amounts = await sql`

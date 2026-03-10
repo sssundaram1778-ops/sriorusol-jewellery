@@ -63,3 +63,12 @@ CREATE INDEX IF NOT EXISTS idx_pledges_second_pledge_no ON pledges_second(pledge
 CREATE INDEX IF NOT EXISTS idx_pledge_amounts_second_pledge_id ON pledge_amounts_second(pledge_id);
 CREATE INDEX IF NOT EXISTS idx_owner_repledges_second_pledge_id ON owner_repledges_second(pledge_id);
 CREATE INDEX IF NOT EXISTS idx_owner_repledges_second_financer_name ON owner_repledges_second(financer_name);
+
+-- Table 4: financers_second - Financer master list (optional)
+CREATE TABLE IF NOT EXISTS financers_second (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(150) NOT NULL UNIQUE,
+  place VARCHAR(100),
+  phone VARCHAR(20),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

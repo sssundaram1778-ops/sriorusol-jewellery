@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react'
 import { Download, X, Smartphone } from 'lucide-react'
 import { usePWA } from '../hooks/usePWA'
 import { useTranslation } from 'react-i18next'
+import { useCategoryStore } from '../store/categoryStore'
 
 export default function InstallPrompt() {
   const { t } = useTranslation()
   const { isInstallable, isInstalled, installApp } = usePWA()
+  const { activeCategory } = useCategoryStore()
+  const isFirst = activeCategory === 'FIRST'
   const [showPrompt, setShowPrompt] = useState(false)
   const [dismissed, setDismissed] = useState(false)
 
@@ -50,8 +53,8 @@ export default function InstallPrompt() {
 
   return (
     <div className="fixed bottom-20 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-50 animate-slide-up">
-      <div className="bg-white rounded-2xl shadow-xl border border-blue-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 flex items-center justify-between">
+      <div className={`bg-white rounded-2xl shadow-xl border ${isFirst ? 'border-blue-200' : 'border-purple-200'} overflow-hidden`}>
+        <div className={`${isFirst ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'bg-gradient-to-r from-purple-600 to-purple-700'} px-4 py-3 flex items-center justify-between`}>
           <div className="flex items-center gap-2 text-white">
             <Smartphone className="w-5 h-5" />
             <span className="font-semibold text-sm">{t('pwa.installTitle', 'Install App')}</span>
@@ -76,7 +79,7 @@ export default function InstallPrompt() {
             </button>
             <button
               onClick={handleInstall}
-              className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+              className={`flex-1 px-4 py-2.5 text-sm font-semibold text-white ${isFirst ? 'bg-blue-600 hover:bg-blue-700' : 'bg-purple-600 hover:bg-purple-700'} rounded-xl transition-colors flex items-center justify-center gap-2`}
             >
               <Download className="w-4 h-4" />
               {t('pwa.install', 'Install')}

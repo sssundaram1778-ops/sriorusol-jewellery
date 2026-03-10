@@ -17,6 +17,31 @@ export {
   JEWEL_TYPES 
 }
 
+// Helper to detect if we should use API
+const shouldUseApi = () => {
+  if (typeof navigator === 'undefined') return false
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  const isProduction = typeof window !== 'undefined' && 
+    window.location.hostname !== 'localhost' && 
+    window.location.hostname !== '127.0.0.1'
+  return isMobile || isProduction
+}
+
+// Helper to make API calls for SAI (Second) category
+const apiCall = async (action, data = {}) => {
+  const apiUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/db` : '/api/db'
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, data: { ...data, category: 'second' } }),
+  })
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.error || `API request failed: ${response.status}`)
+  }
+  return response.json()
+}
+
 // Helper to normalize date to yyyy-mm-dd format
 const normalizeDate = (dateValue) => {
   if (!dateValue) return dateValue
@@ -892,6 +917,17 @@ export const updateOwnerRepledge = async (id, updates) => {
 // ============================================
 
 export const getFinancerList = async () => {
+  // Use API on mobile/production for better compatibility
+  if (shouldUseApi()) {
+    try {
+      const result = await apiCall('getFinancerListSecond')
+      return result.data || []
+    } catch (error) {
+      console.error('Error getting financer list via API:', error)
+      return []
+    }
+  }
+  
   if (sql) {
     try {
       const result = await sql`
@@ -957,6 +993,17 @@ export const getFinancerList = async () => {
 }
 
 export const getOwnerRepledgesByFinancer = async (financerName) => {
+  // Use API on mobile/production for better compatibility
+  if (shouldUseApi()) {
+    try {
+      const result = await apiCall('getOwnerRepledgesByFinancerSecond', { financer_name: financerName })
+      return result.data || []
+    } catch (error) {
+      console.error('Error getting owner repledges by financer via API:', error)
+      return []
+    }
+  }
+  
   if (sql) {
     try {
       const result = await sql`
@@ -1140,4 +1187,144 @@ export const getClosedPledgesWithAmounts = async () => {
       financer_name: ownerRepledge?.financer_name || ''
     }
   }).sort((a, b) => new Date(b.date) - new Date(a.date))
+}
+
+// ============================================
+// ADDITIONAL HELPER FUNCTIONS - SECOND CATEGORY
+// ============================================
+
+export const calculateOwnerRepledgeDuration = (debtDate, releaseDate = new Date()) => {
+  const start = new Date(debtDate)
+  const end = new Date(releaseDate)
+  const totalDays = Math.max(0, Math.ceil((end - start) / (1000 * 60 * 60 * 24)))
+  const months = Math.floor(totalDays / 31)
+  const days = totalDays % 31
+  return { totalDays, months, days }
+}
+
+export const calculateOwnerRepledgeInterest = (amount, interestRate, debtDate, releaseDate = new Date()) => {
+  const { totalDays, months, days } = calculateOwnerRepledgeDuration(debtDate, releaseDate)
+  const interest = amount * (interestRate / 100) * (months + days / 31)
+  return {
+    totalDays,
+    months,
+    days,
+    interest: Math.round(interest * 100) / 100
+  }
+}
+
+export const getActiveOwnerRepledges = async () => {
+  if (sql) {
+    try {
+      const result = await sql`
+        SELECT o.*, p.pledge_no, p.customer_name, p.jewels_details, p.gross_weight, p.net_weight
+        FROM owner_repledges_second o
+        LEFT JOIN pledges_second p ON o.pledge_id = p.id
+        WHERE o.status = 'ACTIVE'
+        ORDER BY o.created_at DESC
+      `
+      return result || []
+    } catch (error) {
+      console.error('Error getting active owner repledges:', error)
+      return []
+    }
+  }
+
+  // Mock fallback
+  const ownerRepledges = getStoredData(OWNER_REPLEDGES_KEY)
+  const pledges = getStoredData(STORAGE_KEYS.PLEDGES)
+  
+  return ownerRepledges
+    .filter(r => r.status === 'ACTIVE')
+    .map(r => ({
+      ...r,
+      pledges: pledges.find(p => p.id === r.pledge_id)
+    }))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+}
+
+// Storage key for standalone financers
+const FINANCERS_KEY = 'sriorusol_financers_second'
+
+export const addFinancer = async (financerData) => {
+  const financer = {
+    id: generateId(),
+    name: financerData.name,
+    place: financerData.place || null
+  }
+
+  if (sql) {
+    try {
+      await sql`
+        INSERT INTO financers_second (id, name, place, created_at) 
+        VALUES (${financer.id}, ${financer.name}, ${financer.place}, NOW())
+      `
+      return financer
+    } catch (error) {
+      console.error('Error adding financer:', error)
+      // Fallback to localStorage
+      const financers = getStoredData(FINANCERS_KEY)
+      financers.push({ ...financer, created_at: new Date().toISOString() })
+      setStoredData(FINANCERS_KEY, financers)
+      return financer
+    }
+  }
+
+  // Mock fallback
+  const financers = getStoredData(FINANCERS_KEY)
+  financers.push({ ...financer, created_at: new Date().toISOString() })
+  setStoredData(FINANCERS_KEY, financers)
+  return financer
+}
+
+export const deleteFinancer = async (name) => {
+  if (sql) {
+    try {
+      await sql`DELETE FROM financers_second WHERE name = ${name}`
+      return
+    } catch (error) {
+      // Fallback to localStorage
+      const financers = getStoredData(FINANCERS_KEY)
+      const filtered = financers.filter(f => f.name !== name)
+      setStoredData(FINANCERS_KEY, filtered)
+      return
+    }
+  }
+
+  // Mock fallback
+  const financers = getStoredData(FINANCERS_KEY)
+  const filtered = financers.filter(f => f.name !== name)
+  setStoredData(FINANCERS_KEY, filtered)
+}
+
+export const getAllOwnerRepledges = async () => {
+  if (sql) {
+    try {
+      const result = await sql`
+        SELECT o.*, p.pledge_no, p.customer_name
+        FROM owner_repledges_second o
+        LEFT JOIN pledges_second p ON o.pledge_id = p.id
+        ORDER BY o.financer_name ASC
+      `
+      return result || []
+    } catch (error) {
+      console.error('Error getting all owner repledges:', error)
+      return []
+    }
+  }
+
+  // Mock fallback
+  const ownerRepledges = getStoredData(OWNER_REPLEDGES_KEY)
+  const pledges = getStoredData(STORAGE_KEYS.PLEDGES)
+  
+  return ownerRepledges
+    .map(r => {
+      const pledge = pledges.find(p => p.id === r.pledge_id)
+      return {
+        ...r,
+        pledge_no: pledge?.pledge_no,
+        customer_name: pledge?.customer_name
+      }
+    })
+    .sort((a, b) => a.financer_name.localeCompare(b.financer_name))
 }

@@ -75,12 +75,12 @@ export default function Settings() {
                     ? 'bg-blue-500 text-white' 
                     : 'bg-slate-200 text-slate-500'
                 }`}>
-                  <span className="text-xl font-bold">1</span>
+                  <span className="text-xl font-bold">SS</span>
                 </div>
                 <span className={`font-bold ${
                   activeCategory === 'FIRST' ? 'text-blue-700' : 'text-slate-600'
                 }`}>
-                  FIRST
+                  SS
                 </span>
                 {activeCategory === 'FIRST' && (
                   <span className="text-[10px] bg-blue-500 text-white px-2 py-0.5 rounded-full font-bold">
@@ -105,12 +105,12 @@ export default function Settings() {
                     ? 'bg-purple-500 text-white' 
                     : 'bg-slate-200 text-slate-500'
                 }`}>
-                  <span className="text-xl font-bold">2</span>
+                  <span className="text-xl font-bold">SAI</span>
                 </div>
                 <span className={`font-bold ${
                   activeCategory === 'SECOND' ? 'text-purple-700' : 'text-slate-600'
                 }`}>
-                  SECOND
+                  SAI
                 </span>
                 {activeCategory === 'SECOND' && (
                   <span className="text-[10px] bg-purple-500 text-white px-2 py-0.5 rounded-full font-bold">

@@ -1,10 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Gem } from 'lucide-react'
+import { useCategoryStore } from '../store/categoryStore'
 
 export default function Header({ title, subtitle, showBack = false, onBack, rightAction }) {
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { activeCategory } = useCategoryStore()
+  const isFirst = activeCategory === 'FIRST'
 
   const handleBack = () => {
     if (onBack) {
@@ -16,8 +19,8 @@ export default function Header({ title, subtitle, showBack = false, onBack, righ
 
   return (
     <header className="sticky top-0 z-40 safe-top">
-      {/* Background with blur - Blue Theme */}
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 backdrop-blur-md border-b border-blue-500/30" />
+      {/* Background with blur - Category Theme */}
+      <div className={`absolute inset-0 ${isFirst ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-500/30' : 'bg-gradient-to-r from-purple-600 to-indigo-600 border-purple-500/30'} backdrop-blur-md border-b`} />
       
       <div className="relative flex items-center justify-between h-14 lg:h-16 px-4">
         <div className="flex items-center gap-3 min-w-0">
@@ -49,7 +52,7 @@ export default function Header({ title, subtitle, showBack = false, onBack, righ
               {title}
             </h1>
             {subtitle && (
-              <p className="text-xs text-blue-100 truncate">{subtitle}</p>
+              <p className={`text-xs ${isFirst ? 'text-blue-100' : 'text-purple-100'} truncate`}>{subtitle}</p>
             )}
           </div>
         </div>
@@ -61,5 +64,3 @@ export default function Header({ title, subtitle, showBack = false, onBack, righ
     </header>
   )
 }
-
-

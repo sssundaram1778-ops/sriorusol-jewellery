@@ -61,7 +61,7 @@
     "vite-plugin-pwa": "^1.0.1"
   },
   "build": {
-    "appId": "com.suss.jeweller",
+    "appId": "com.suss.app",
     "productName": "SUSS",
     "directories": {
       "output": "electron-dist"
