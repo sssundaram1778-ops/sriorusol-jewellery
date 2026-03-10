@@ -12,9 +12,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.svg'],
       manifest: {
-        name: 'Sri Orusol Jewellers',
+        name: 'Sri Orusol Jeweller',
         short_name: 'Sri Orusol',
-        description: 'Sri Orusol Jewellers',
+        description: 'Sri Orusol Jeweller',
         theme_color: '#2563EB',
         background_color: '#EFF6FF',
         display: 'standalone',

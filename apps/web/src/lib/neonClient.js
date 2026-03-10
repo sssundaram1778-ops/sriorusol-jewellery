@@ -3,21 +3,21 @@ import { neon } from '@neondatabase/serverless'
 // Get database URL from environment
 const databaseUrl = import.meta.env.VITE_DATABASE_URL
 
-// Check if Neon is configured
-export const isNeonConfigured = databaseUrl && 
+// Check if running on Vercel (production) or localhost
+const isProduction = () => {
+  if (typeof window === 'undefined') return false
+  return window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+}
+
+// Check if Neon is configured - in production, assume it's configured server-side
+export const isNeonConfigured = isProduction() || (databaseUrl && 
   databaseUrl !== 'your_database_url' &&
-  databaseUrl.includes('neon.tech')
+  databaseUrl.includes('neon.tech'))
 
 // Detect mobile browser
 const isMobile = () => {
   if (typeof navigator === 'undefined') return false
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-}
-
-// Check if running on Vercel (production) or localhost
-const isProduction = () => {
-  if (typeof window === 'undefined') return false
-  return window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
 }
 
 // API URL for serverless functions
@@ -30,7 +30,7 @@ const getApiUrl = () => {
 const shouldUseApi = () => isMobile() || isProduction()
 
 // Create Neon SQL client - only for desktop localhost
-const directSql = isNeonConfigured && !shouldUseApi() ? neon(databaseUrl, {
+const directSql = databaseUrl && !shouldUseApi() ? neon(databaseUrl, {
   fetchOptions: {
     cache: 'no-store',
   }
@@ -135,18 +135,29 @@ export const checkConnection = async (retries = 2) => {
     return { connected: false, error: 'Neon not configured' }
   }
 
+  let lastError = null
+
   // Try API first for mobile/production
   if (useApiMode) {
-    try {
-      notifyConnectionListeners('connecting')
-      const result = await apiCall('check')
-      if (result.connected) {
-        notifyConnectionListeners('connected')
-        return { connected: true, error: null }
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        notifyConnectionListeners('connecting')
+        const result = await apiCall('check')
+        if (result.connected) {
+          notifyConnectionListeners('connected')
+          return { connected: true, error: null }
+        }
+      } catch (error) {
+        lastError = error.message
+        console.error(`API connection attempt ${attempt + 1} failed:`, error.message)
+        if (attempt < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
       }
-    } catch (error) {
-      console.error('API connection check failed:', error.message)
     }
+    // API mode failed after retries
+    notifyConnectionListeners('disconnected')
+    return { connected: false, error: lastError || 'Connection failed' }
   }
 
   // Try direct connection for desktop

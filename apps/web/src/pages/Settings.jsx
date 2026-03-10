@@ -212,7 +212,7 @@ export default function Settings() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-slate-800">Sri Orusol Jewellers</h1>
+                <h1 className="text-lg font-bold text-slate-800">Sri Orusol Jeweller</h1>
                 <CategoryBadge showLabel={false} />
               </div>
               <p className="text-[11px] text-slate-500">Settings & Preferences</p>
@@ -324,7 +324,7 @@ export default function Settings() {
               <Gem className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-800 text-lg">Sri Orusol Jewellers</h3>
+              <h3 className="font-bold text-slate-800 text-lg">Sri Orusol Jeweller</h3>
               <p className="text-sm text-slate-500"></p>
             </div>
           </div>
@@ -439,7 +439,7 @@ export default function Settings() {
 
         {/* Footer */}
         <div className="text-center py-6">
-          <p className="text-sm text-slate-500 font-medium">© 2026 Sri Orusol Jewellers</p>
+          <p className="text-sm text-slate-500 font-medium">© 2026 Sri Orusol Jeweller</p>
           <p className="text-xs text-slate-400 mt-1">All rights reserved</p>
         </div>
       </div>

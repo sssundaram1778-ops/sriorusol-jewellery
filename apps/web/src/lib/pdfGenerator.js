@@ -113,7 +113,7 @@ export const generatePledgePDF = (pledge, language = 'en') => {
   doc.setTextColor(...COLORS.white)
   doc.setFontSize(20)
   doc.setFont(undefined, 'bold')
-  doc.text('Sri Orusol Jewellers', margin, 14)
+  doc.text('Sri Orusol Jeweller', margin, 14)
   
   // Tagline
   doc.setFontSize(9)
@@ -450,13 +450,13 @@ export const generatePledgePDF = (pledge, language = 'en') => {
   doc.setFontSize(9)
   doc.setTextColor(...COLORS.text)
   doc.setFont(undefined, 'italic')
-  doc.text('Thank you for choosing Sri Orusol Jewellers!', pageWidth / 2, footerY + 1, { align: 'center' })
+  doc.text('Thank you for choosing Sri Orusol Jeweller!', pageWidth / 2, footerY + 1, { align: 'center' })
   
   // Contact & timestamp
   doc.setFontSize(7)
   doc.setTextColor(...COLORS.textMuted)
   doc.setFont(undefined, 'normal')
-  doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}  |  Contact: +91-XXXXXXXXXX  |  © Sri Orusol Jewellers`, pageWidth / 2, footerY + 9, { align: 'center' })
+  doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}  |  Contact: +91-XXXXXXXXXX  |  © Sri Orusol Jeweller`, pageWidth / 2, footerY + 9, { align: 'center' })
   
   return doc
 }
@@ -493,7 +493,7 @@ export const downloadFinancerPDF = async (financerName, financerPlace, pledges) 
   doc.setTextColor(...COLORS.white)
   doc.setFontSize(22)
   doc.setFont(undefined, 'bold')
-  doc.text('Sri Orusol Jewellers', margin, 16)
+  doc.text('Sri Orusol Jeweller', margin, 16)
   
   // Report subtitle
   doc.setFontSize(11)
@@ -651,7 +651,7 @@ export const downloadFinancerPDF = async (financerName, financerPlace, pledges) 
   doc.setFontSize(8)
   doc.setTextColor(...COLORS.textMuted)
   doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}`, margin, footerY)
-  doc.text('Sri Orusol Jewellers', pageWidth / 2, footerY, { align: 'center' })
+  doc.text('Sri Orusol Jeweller', pageWidth / 2, footerY, { align: 'center' })
   doc.text(`Page 1 of 1`, pageWidth - margin, footerY, { align: 'right' })
   
   await savePDF(doc, `${financerName.replace(/[^a-zA-Z0-9]/g, '_')}_Report.pdf`)
@@ -677,7 +677,7 @@ export const downloadAllPledgesPDF = async (pledges, reportTitle = 'All Pledges'
   doc.setTextColor(...COLORS.white)
   doc.setFontSize(22)
   doc.setFont(undefined, 'bold')
-  doc.text('Sri Orusol Jewellers', margin, 16)
+  doc.text('Sri Orusol Jeweller', margin, 16)
   
   // Report subtitle
   doc.setFontSize(11)
@@ -833,7 +833,7 @@ export const downloadAllPledgesPDF = async (pledges, reportTitle = 'All Pledges'
   doc.setFontSize(8)
   doc.setTextColor(...COLORS.textMuted)
   doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}`, margin, footerY)
-  doc.text('Sri Orusol Jewellers', pageWidth / 2, footerY, { align: 'center' })
+  doc.text('Sri Orusol Jeweller', pageWidth / 2, footerY, { align: 'center' })
   doc.text(`Total: ${pledges.length} records`, pageWidth - margin, footerY, { align: 'right' })
   
   const filename = reportTitle.replace(/\s+/g, '_')

@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Sri Orusol Jewellers",
+    "name": "Sri Orusol Jeweller",
     "tagline": "",
     "version": "Version"
   },
@@ -17,7 +17,7 @@
   },
   "pwa": {
     "installTitle": "Install App",
-    "installDescription": "Install Sri Orusol Jewellers for quick access and offline use",
+    "installDescription": "Install Sri Orusol Jeweller for quick access and offline use",
     "install": "Install",
     "later": "Later",
     "updateAvailable": "A new version is available",
