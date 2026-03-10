@@ -424,11 +424,11 @@ export default function Settings() {
               className="w-full flex justify-between items-center py-3 px-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
             >
               <span className="text-sm text-slate-600 font-medium">Version</span>
-              <span className={`text-sm font-bold ${isFirst ? 'text-blue-600' : 'text-purple-600'}`}>1.0.0</span>
+              <span className={`text-sm font-bold ${isFirst ? 'text-blue-600' : 'text-purple-600'}`}>1.0.1</span>
             </button>
             <div className="flex justify-between items-center py-3 px-4 bg-slate-50 rounded-xl">
               <span className="text-sm text-slate-600 font-medium">Build</span>
-              <span className="text-sm font-bold text-slate-700">Production</span>
+              <span className="text-sm font-bold text-slate-700">2026.03.10</span>
             </div>
             <div className="flex justify-between items-center py-3 px-4 bg-slate-50 rounded-xl">
               <span className="text-sm text-slate-600 font-medium">Platform</span>
