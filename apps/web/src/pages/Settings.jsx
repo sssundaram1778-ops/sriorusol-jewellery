@@ -454,8 +454,8 @@ export default function Settings() {
               <span className="text-xs bg-emerald-500 text-white px-2 py-1 rounded-full font-bold">ACTIVE</span>
             </div>
             
-            {/* Reset SAI PIN - Only show if PIN exists */}
-            {hasSaiPin && (
+            {/* Reset SAI PIN - Show ONLY when SAI pledge is activated */}
+            {activeCategory === 'SECOND' && hasSaiPin && (
               <button
                 onClick={handleResetSaiPinClick}
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl text-purple-600 font-medium transition-colors"
