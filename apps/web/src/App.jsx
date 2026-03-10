@@ -13,12 +13,19 @@ import EncryptionLogin from './components/EncryptionLogin'
 import PINLogin, { isPINAuthenticated } from './components/PINLogin'
 import { keepAlive } from './lib/database'
 import { isEncryptionInitialized, hasEncryptionSetup } from './lib/encryption'
+import { useCategoryStore } from './store/categoryStore'
 
 // Keep-alive interval (every 4 minutes to prevent database pause)
 const KEEP_ALIVE_INTERVAL = 4 * 60 * 1000
 
 function App() {
   const [authStep, setAuthStep] = useState('checking') // 'checking', 'pin', 'encryption', 'authenticated'
+  const { resetToDefault } = useCategoryStore()
+  
+  // Reset to SS (FIRST) category on app start - SAI should always be hidden initially
+  useEffect(() => {
+    resetToDefault()
+  }, [])
   
   // Check authentication state on load
   useEffect(() => {

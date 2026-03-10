@@ -1,22 +1,166 @@
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Database, Info, Gem, Shield, Clock, ChevronLeft, Layers, LogOut, Lock, Mail } from 'lucide-react'
+import { Database, Info, Gem, Shield, Clock, ChevronLeft, Layers, LogOut, Lock, Mail, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useCategoryStore } from '../store/categoryStore'
 import CategoryBadge from '../components/CategoryBadge'
 import { clearEncryptionSession } from '../lib/encryption'
 import { clearPINAuth } from '../components/PINLogin'
+import toast from 'react-hot-toast'
+
+// Simple hash function for SAI PIN
+const hashSaiPin = async (pin) => {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(pin + 'sai_secret_salt_2026')
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+// API call helper
+const apiCall = async (action, data = {}) => {
+  const apiUrl = `${window.location.origin}/api/db`
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, data }),
+  })
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.error || `API request failed: ${response.status}`)
+  }
+  return response.json()
+}
 
 export default function Settings() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { activeCategory, setCategory } = useCategoryStore()
+  const { activeCategory, setCategory, saiUnlocked, unlockSai } = useCategoryStore()
   const isFirst = activeCategory === 'FIRST'
+  
+  // Version tap counter for hidden SAI access
+  const [versionTapCount, setVersionTapCount] = useState(0)
+  const [lastTapTime, setLastTapTime] = useState(0)
+  
+  // SAI PIN modal states
+  const [showSaiPinModal, setShowSaiPinModal] = useState(false)
+  const [saiPinMode, setSaiPinMode] = useState('check') // 'check', 'setup', 'verify'
+  const [saiPin, setSaiPin] = useState('')
+  const [confirmSaiPin, setConfirmSaiPin] = useState('')
+  const [saiPinError, setSaiPinError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout? You will need to enter PIN and master password again.')) {
       clearPINAuth() // Clear PIN session
       clearEncryptionSession() // Clear encryption session
       window.location.reload()
+    }
+  }
+  
+  // Handle version tap for hidden SAI access
+  const handleVersionTap = () => {
+    const now = Date.now()
+    
+    // Reset counter if more than 2 seconds between taps
+    if (now - lastTapTime > 2000) {
+      setVersionTapCount(1)
+    } else {
+      setVersionTapCount(prev => prev + 1)
+    }
+    setLastTapTime(now)
+    
+    // Show progress feedback
+    if (versionTapCount >= 2 && versionTapCount < 4) {
+      toast.dismiss()
+      toast(`${5 - versionTapCount} more taps...`, { duration: 1000, icon: '🔐' })
+    }
+    
+    // Unlock SAI after 5 taps
+    if (versionTapCount >= 4) {
+      setVersionTapCount(0)
+      unlockSai()
+      toast.success('🔓 SAI Mode Unlocked', { duration: 2000 })
+    }
+  }
+  
+  // Handle SAI category click - show PIN modal
+  const handleSaiClick = async () => {
+    setShowSaiPinModal(true)
+    setSaiPin('')
+    setConfirmSaiPin('')
+    setSaiPinError('')
+    setSaiPinMode('check')
+    setIsLoading(true)
+    
+    try {
+      // Check if SAI PIN is already set up
+      const result = await apiCall('getSaiPinStatus')
+      if (result.data?.exists) {
+        setSaiPinMode('verify')
+      } else {
+        setSaiPinMode('setup')
+      }
+    } catch (error) {
+      console.error('Error checking SAI PIN status:', error)
+      setSaiPinMode('setup') // Default to setup if can't check
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  // Setup new SAI PIN
+  const handleSetupSaiPin = async () => {
+    if (saiPin.length < 4) {
+      setSaiPinError('PIN must be at least 4 digits')
+      return
+    }
+    if (saiPin !== confirmSaiPin) {
+      setSaiPinError('PINs do not match')
+      return
+    }
+    
+    setIsLoading(true)
+    try {
+      const pinHash = await hashSaiPin(saiPin)
+      await apiCall('setupSaiPIN', { sai_pin_hash: pinHash })
+      
+      toast.success('SAI PIN created successfully')
+      setShowSaiPinModal(false)
+      setCategory('SECOND')
+    } catch (error) {
+      console.error('Error setting up SAI PIN:', error)
+      setSaiPinError('Failed to setup PIN. Try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  // Verify SAI PIN
+  const handleVerifySaiPin = async () => {
+    if (saiPin.length < 4) {
+      setSaiPinError('Enter your SAI PIN')
+      return
+    }
+    
+    setIsLoading(true)
+    try {
+      const pinHash = await hashSaiPin(saiPin)
+      const result = await apiCall('verifySaiPIN', { sai_pin_hash: pinHash })
+      
+      if (result.data?.valid) {
+        toast.success('Access granted')
+        setShowSaiPinModal(false)
+        setCategory('SECOND')
+      } else {
+        setSaiPinError('Incorrect PIN')
+        setSaiPin('')
+      }
+    } catch (error) {
+      console.error('Error verifying SAI PIN:', error)
+      setSaiPinError('Verification failed. Try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -47,84 +191,86 @@ export default function Settings() {
       </div>
 
       <div className="px-4 py-4 space-y-4">
-        {/* Pledge Category Selector */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3 mb-4">
-            <div className={`w-12 h-12 ${isFirst ? 'bg-gradient-to-br from-blue-500 to-blue-600' : 'bg-gradient-to-br from-purple-500 to-purple-600'} rounded-xl flex items-center justify-center shadow-md`}>
-              <Layers className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-800">Pledge Category</h3>
-              <p className="text-xs text-slate-500">Select which category to work with</p>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3">
-            {/* First Category */}
-            <button
-              onClick={() => setCategory('FIRST')}
-              className={`p-4 rounded-xl border-2 transition-all ${
-                activeCategory === 'FIRST'
-                  ? 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-500/20'
-                  : 'border-slate-200 bg-slate-50 hover:border-slate-300'
-              }`}
-            >
-              <div className="flex flex-col items-center gap-2">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                  activeCategory === 'FIRST' 
-                    ? 'bg-blue-500 text-white' 
-                    : 'bg-slate-200 text-slate-500'
-                }`}>
-                  <span className="text-xl font-bold">SS</span>
-                </div>
-                <span className={`font-bold ${
-                  activeCategory === 'FIRST' ? 'text-blue-700' : 'text-slate-600'
-                }`}>
-                  SS
-                </span>
-                {activeCategory === 'FIRST' && (
-                  <span className="text-[10px] bg-blue-500 text-white px-2 py-0.5 rounded-full font-bold">
-                    ACTIVE
-                  </span>
-                )}
+        {/* Pledge Category Selector - Only show if SAI is unlocked or currently in SAI mode */}
+        {(saiUnlocked || activeCategory === 'SECOND') && (
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-12 h-12 ${isFirst ? 'bg-gradient-to-br from-blue-500 to-blue-600' : 'bg-gradient-to-br from-purple-500 to-purple-600'} rounded-xl flex items-center justify-center shadow-md`}>
+                <Layers className="w-6 h-6 text-white" />
               </div>
-            </button>
+              <div>
+                <h3 className="font-bold text-slate-800">Pledge Category</h3>
+                <p className="text-xs text-slate-500">Select which category to work with</p>
+              </div>
+            </div>
             
-            {/* Second Category */}
-            <button
-              onClick={() => setCategory('SECOND')}
-              className={`p-4 rounded-xl border-2 transition-all ${
-                activeCategory === 'SECOND'
-                  ? 'border-purple-500 bg-purple-50 shadow-lg shadow-purple-500/20'
-                  : 'border-slate-200 bg-slate-50 hover:border-slate-300'
-              }`}
-            >
-              <div className="flex flex-col items-center gap-2">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                  activeCategory === 'SECOND' 
-                    ? 'bg-purple-500 text-white' 
-                    : 'bg-slate-200 text-slate-500'
-                }`}>
-                  <span className="text-xl font-bold">SAI</span>
-                </div>
-                <span className={`font-bold ${
-                  activeCategory === 'SECOND' ? 'text-purple-700' : 'text-slate-600'
-                }`}>
-                  SAI
-                </span>
-                {activeCategory === 'SECOND' && (
-                  <span className="text-[10px] bg-purple-500 text-white px-2 py-0.5 rounded-full font-bold">
-                    ACTIVE
+            <div className="grid grid-cols-2 gap-3">
+              {/* First Category - SS */}
+              <button
+                onClick={() => setCategory('FIRST')}
+                className={`p-4 rounded-xl border-2 transition-all ${
+                  activeCategory === 'FIRST'
+                    ? 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-500/20'
+                    : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                    activeCategory === 'FIRST' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-slate-200 text-slate-500'
+                  }`}>
+                    <span className="text-xl font-bold">SS</span>
+                  </div>
+                  <span className={`font-bold ${
+                    activeCategory === 'FIRST' ? 'text-blue-700' : 'text-slate-600'
+                  }`}>
+                    SS
                   </span>
-                )}
-              </div>
-            </button>
+                  {activeCategory === 'FIRST' && (
+                    <span className="text-[10px] bg-blue-500 text-white px-2 py-0.5 rounded-full font-bold">
+                      ACTIVE
+                    </span>
+                  )}
+                </div>
+              </button>
+              
+              {/* Second Category - SAI (requires PIN) */}
+              <button
+                onClick={handleSaiClick}
+                className={`p-4 rounded-xl border-2 transition-all ${
+                  activeCategory === 'SECOND'
+                    ? 'border-purple-500 bg-purple-50 shadow-lg shadow-purple-500/20'
+                    : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                    activeCategory === 'SECOND' 
+                      ? 'bg-purple-500 text-white' 
+                      : 'bg-slate-200 text-slate-500'
+                  }`}>
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <span className={`font-bold ${
+                    activeCategory === 'SECOND' ? 'text-purple-700' : 'text-slate-600'
+                  }`}>
+                    SAI
+                  </span>
+                  {activeCategory === 'SECOND' && (
+                    <span className="text-[10px] bg-purple-500 text-white px-2 py-0.5 rounded-full font-bold">
+                      ACTIVE
+                    </span>
+                  )}
+                </div>
+              </button>
+            </div>
+            
+            <p className="text-xs text-slate-400 text-center mt-4">
+              Each category has separate pledges, financers, and data
+            </p>
           </div>
-          
-          <p className="text-xs text-slate-400 text-center mt-4">
-            Each category has separate pledges, financers, and data
-          </p>
-        </div>
+        )}
 
         {/* Shop Details */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
@@ -227,10 +373,14 @@ export default function Settings() {
           </div>
           
           <div className="space-y-1">
-            <div className="flex justify-between items-center py-3 px-4 bg-slate-50 rounded-xl">
+            {/* Version - Tappable for hidden SAI access */}
+            <button
+              onClick={handleVersionTap}
+              className="w-full flex justify-between items-center py-3 px-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
+            >
               <span className="text-sm text-slate-600 font-medium">Version</span>
               <span className={`text-sm font-bold ${isFirst ? 'text-blue-600' : 'text-purple-600'}`}>1.0.0</span>
-            </div>
+            </button>
             <div className="flex justify-between items-center py-3 px-4 bg-slate-50 rounded-xl">
               <span className="text-sm text-slate-600 font-medium">Build</span>
               <span className="text-sm font-bold text-slate-700">Production</span>
@@ -248,12 +398,121 @@ export default function Settings() {
           <p className="text-xs text-slate-400 mt-1">All rights reserved</p>
         </div>
       </div>
+      
+      {/* SAI PIN Modal */}
+      {showSaiPinModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Lock className="w-5 h-5 text-white" />
+                <h3 className="text-lg font-bold text-white">
+                  {saiPinMode === 'setup' ? 'Setup SAI PIN' : 'Enter SAI PIN'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowSaiPinModal(false)}
+                className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-5 space-y-4">
+              {isLoading && saiPinMode === 'check' ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-3 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <>
+                  {saiPinMode === 'setup' ? (
+                    <>
+                      <p className="text-sm text-slate-600 text-center">
+                        Create a 4-digit PIN for SAI access
+                      </p>
+                      <div>
+                        <label className="text-sm font-medium text-slate-700 mb-1 block">New PIN</label>
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={saiPin}
+                          onChange={(e) => {
+                            setSaiPin(e.target.value.replace(/\D/g, ''))
+                            setSaiPinError('')
+                          }}
+                          placeholder="Enter 4-6 digit PIN"
+                          className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-center text-2xl tracking-widest font-mono focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-slate-700 mb-1 block">Confirm PIN</label>
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={confirmSaiPin}
+                          onChange={(e) => {
+                            setConfirmSaiPin(e.target.value.replace(/\D/g, ''))
+                            setSaiPinError('')
+                          }}
+                          placeholder="Confirm PIN"
+                          className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-center text-2xl tracking-widest font-mono focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-slate-600 text-center">
+                        Enter your SAI PIN to access
+                      </p>
+                      <div>
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={saiPin}
+                          onChange={(e) => {
+                            setSaiPin(e.target.value.replace(/\D/g, ''))
+                            setSaiPinError('')
+                          }}
+                          placeholder="Enter PIN"
+                          className="w-full h-14 px-4 bg-slate-50 border border-slate-200 rounded-xl text-center text-3xl tracking-widest font-mono focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none"
+                          autoFocus
+                        />
+                      </div>
+                    </>
+                  )}
+                  
+                  {saiPinError && (
+                    <p className="text-sm text-red-500 text-center font-medium">{saiPinError}</p>
+                  )}
+                  
+                  <button
+                    onClick={saiPinMode === 'setup' ? handleSetupSaiPin : handleVerifySaiPin}
+                    disabled={isLoading}
+                    className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4" />
+                        {saiPinMode === 'setup' ? 'Create PIN' : 'Unlock'}
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-
-
-
 
 
 

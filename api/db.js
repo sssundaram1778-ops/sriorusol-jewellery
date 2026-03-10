@@ -519,6 +519,51 @@ export default async function handler(req, res) {
         `
         return res.json({ success: true })
 
+      // ============ SAI PIN (Hidden Category Access) ============
+      case 'getSaiPinStatus':
+        // Check if SAI PIN is set up
+        const [saiStatus] = await sql`
+          SELECT sai_pin_hash FROM app_settings WHERE id = 'main' LIMIT 1
+        `
+        return res.json({ data: { exists: !!saiStatus?.sai_pin_hash } })
+
+      case 'setupSaiPIN':
+        // Setup SAI PIN (first time)
+        console.log('setupSaiPIN called')
+        
+        // Check if settings exist
+        const [existingSaiSettings] = await sql`
+          SELECT id FROM app_settings WHERE id = 'main' LIMIT 1
+        `
+        
+        if (existingSaiSettings) {
+          await sql`
+            UPDATE app_settings SET
+              sai_pin_hash = ${data.sai_pin_hash},
+              updated_at = NOW()
+            WHERE id = 'main'
+          `
+        } else {
+          await sql`
+            INSERT INTO app_settings (id, sai_pin_hash, created_at, updated_at)
+            VALUES ('main', ${data.sai_pin_hash}, NOW(), NOW())
+          `
+        }
+        return res.json({ success: true })
+
+      case 'verifySaiPIN':
+        // Verify SAI PIN
+        const [saiSettings] = await sql`
+          SELECT sai_pin_hash FROM app_settings WHERE id = 'main' LIMIT 1
+        `
+        
+        if (!saiSettings || !saiSettings.sai_pin_hash) {
+          return res.json({ data: { exists: false } })
+        }
+        
+        const saiPinValid = saiSettings.sai_pin_hash === data.sai_pin_hash
+        return res.json({ data: { valid: saiPinValid } })
+
       default:
         return res.status(400).json({ error: 'Invalid action' })
     }

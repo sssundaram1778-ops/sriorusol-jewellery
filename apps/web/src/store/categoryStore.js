@@ -7,13 +7,28 @@ export const useCategoryStore = create(
       // Active category: 'FIRST' or 'SECOND'
       activeCategory: 'FIRST',
       
+      // SAI unlocked state (not persisted - resets on refresh)
+      saiUnlocked: false,
+      
       // Set specific category
-      setCategory: (category) => set({ activeCategory: category }),
+      setCategory: (category) => {
+        // If switching to SS (FIRST), hide SAI again
+        if (category === 'FIRST') {
+          set({ activeCategory: category, saiUnlocked: false })
+        } else {
+          set({ activeCategory: category })
+        }
+      },
       
       // Toggle between categories
-      toggleCategory: () => set((state) => ({
-        activeCategory: state.activeCategory === 'FIRST' ? 'SECOND' : 'FIRST'
-      })),
+      toggleCategory: () => set((state) => {
+        const newCategory = state.activeCategory === 'FIRST' ? 'SECOND' : 'FIRST'
+        // If switching to SS, hide SAI
+        if (newCategory === 'FIRST') {
+          return { activeCategory: newCategory, saiUnlocked: false }
+        }
+        return { activeCategory: newCategory }
+      }),
       
       // Check if current category is First
       isFirst: () => get().activeCategory === 'FIRST',
@@ -23,6 +38,15 @@ export const useCategoryStore = create(
       
       // Get category display name
       getCategoryName: () => get().activeCategory === 'FIRST' ? 'SS' : 'SAI',
+      
+      // Unlock SAI visibility (after tapping version 5 times)
+      unlockSai: () => set({ saiUnlocked: true }),
+      
+      // Lock SAI visibility
+      lockSai: () => set({ saiUnlocked: false, activeCategory: 'FIRST' }),
+      
+      // Reset to default (SS) - called on app start
+      resetToDefault: () => set({ activeCategory: 'FIRST', saiUnlocked: false }),
       
       // Get category colors
       getCategoryColors: () => {
@@ -45,6 +69,8 @@ export const useCategoryStore = create(
     }),
     {
       name: 'sriorusol-category', // localStorage key
+      // Only persist activeCategory as FIRST (SS) - SAI always hidden on restart
+      partialize: (state) => ({ activeCategory: 'FIRST' }),
     }
   )
 )

@@ -86,3 +86,6 @@ CREATE INDEX IF NOT EXISTS idx_pledges_pledge_no ON pledges(pledge_no);
 CREATE INDEX IF NOT EXISTS idx_pledge_amounts_pledge_id ON pledge_amounts(pledge_id);
 CREATE INDEX IF NOT EXISTS idx_owner_repledges_pledge_id ON owner_repledges(pledge_id);
 CREATE INDEX IF NOT EXISTS idx_owner_repledges_financer_name ON owner_repledges(financer_name);
+
+-- Add SAI PIN column to app_settings (for hidden category access)
+ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS sai_pin_hash VARCHAR(255);
