@@ -130,8 +130,11 @@ const createSqlProxy = () => {
 export const sql = isNeonConfigured ? createSqlProxy() : null
 
 // Health check function with API fallback
-export const checkConnection = async (retries = 2) => {
+export const checkConnection = async (retries = 3) => {
+  console.log('checkConnection called, isNeonConfigured:', isNeonConfigured, 'useApiMode:', useApiMode)
+  
   if (!isNeonConfigured) {
+    console.log('Neon not configured')
     return { connected: false, error: 'Neon not configured' }
   }
 
@@ -139,23 +142,28 @@ export const checkConnection = async (retries = 2) => {
 
   // Try API first for mobile/production
   if (useApiMode) {
+    console.log('Using API mode for connection check')
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
         notifyConnectionListeners('connecting')
+        console.log(`API connection attempt ${attempt + 1}...`)
         const result = await apiCall('check')
+        console.log('API check result:', result)
         if (result.connected) {
           notifyConnectionListeners('connected')
+          console.log('Connection successful!')
           return { connected: true, error: null }
         }
       } catch (error) {
         lastError = error.message
-        console.error(`API connection attempt ${attempt + 1} failed:`, error.message)
+        console.error(`API connection attempt ${attempt + 1} failed:`, error.message, error)
         if (attempt < retries - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          await new Promise(resolve => setTimeout(resolve, 1500))
         }
       }
     }
     // API mode failed after retries
+    console.log('All API attempts failed, lastError:', lastError)
     notifyConnectionListeners('disconnected')
     return { connected: false, error: lastError || 'Connection failed' }
   }
