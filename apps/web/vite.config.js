@@ -102,6 +102,10 @@ export default defineConfig({
         ]
       },
       workbox: {
+        // Force immediate update - skip waiting and claim clients
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,svg,woff,woff2}'],
         runtimeCaching: [
           {
