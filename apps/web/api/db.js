@@ -29,6 +29,7 @@ const ensureAppSettingsTable = async () => {
       CREATE TABLE IF NOT EXISTS app_settings (
         id VARCHAR(50) PRIMARY KEY DEFAULT 'main',
         pin_hash VARCHAR(255),
+        sai_pin_hash VARCHAR(255),
         security_question TEXT,
         security_answer_hash VARCHAR(255),
         lockout_until TIMESTAMP,
@@ -37,6 +38,14 @@ const ensureAppSettingsTable = async () => {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `
+    
+    // Ensure sai_pin_hash column exists (for existing tables)
+    try {
+      await sql`ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS sai_pin_hash VARCHAR(255)`
+    } catch (e) {
+      // Column may already exist, ignore error
+    }
+    
     appSettingsInitialized = true
     console.log('app_settings table ensured')
     return true
