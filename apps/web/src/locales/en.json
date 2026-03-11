@@ -202,7 +202,9 @@
     "repledgeDetails": "Re-Pledge Details",
     "calculation": "Interest Calculation",
     "calculationNote": "1 month = 31 days",
-    "noRepledges": "No owner re-pledges yet"
+    "noRepledges": "No owner re-pledges yet",
+    "activeFinancers": "Active Financers",
+    "totalAmount": "Total Amount"
   },
   "financers": {
     "title": "Financers",

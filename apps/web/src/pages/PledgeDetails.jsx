@@ -498,9 +498,8 @@ export default function PledgeDetails() {
               {t('ownerRepledge.sectionTitle')}
             </h3>
             <div className="flex items-center gap-2">
-              {/* Only show Add button if pledge is active AND no active owner repledge exists */}
-              {currentPledge.status === 'ACTIVE' && 
-               !(currentPledge.ownerRepledges?.some(or => or.status === 'ACTIVE')) && (
+              {/* Show Add button if pledge is active - allows multiple financers */}
+              {currentPledge.status === 'ACTIVE' && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -518,6 +517,30 @@ export default function PledgeDetails() {
           
           {showOwnerRepledgeHistory && (
             <div className="p-4 space-y-3">
+              {/* Summary for multiple financers */}
+              {currentPledge.ownerRepledges && currentPledge.ownerRepledges.filter(or => or.status === 'ACTIVE').length > 0 && (
+                <div className={`${isFirst ? 'bg-blue-100 border-blue-200' : 'bg-purple-100 border-purple-200'} rounded-xl p-3 border`}>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className={`text-xs ${isFirst ? 'text-blue-600' : 'text-purple-600'} font-semibold`}>
+                        {t('ownerRepledge.activeFinancers') || 'Active Financers'}
+                      </p>
+                      <p className={`font-bold ${isFirst ? 'text-blue-800' : 'text-purple-800'}`}>
+                        {currentPledge.ownerRepledges.filter(or => or.status === 'ACTIVE').length}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-xs ${isFirst ? 'text-blue-600' : 'text-purple-600'} font-semibold`}>
+                        {t('ownerRepledge.totalAmount') || 'Total Amount'}
+                      </p>
+                      <p className={`font-bold ${isFirst ? 'text-blue-800' : 'text-purple-800'}`}>
+                        {formatCurrency(currentPledge.ownerRepledges.filter(or => or.status === 'ACTIVE').reduce((sum, or) => sum + (parseFloat(or.amount) || 0), 0))}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {currentPledge.ownerRepledges && currentPledge.ownerRepledges.length > 0 ? (
                 currentPledge.ownerRepledges.map((or, index) => {
                   return (

@@ -302,16 +302,19 @@ export const getActivePledges = async () => {
         SELECT * FROM pledge_amounts_second WHERE pledge_id = ANY(${pledgeIds})
       `
       
-      // Fetch active owner repledges to get financer names
+      // Fetch active owner repledges to get financer names (all active financers per pledge)
       const ownerRepledges = await sql`
-        SELECT pledge_id, financer_name FROM owner_repledges_second WHERE pledge_id = ANY(${pledgeIds}) AND status = 'ACTIVE'
+        SELECT pledge_id, financer_name, amount FROM owner_repledges_second WHERE pledge_id = ANY(${pledgeIds}) AND status = 'ACTIVE'
       `
 
       return pledges.map(pledge => {
         const amounts = allAmounts?.filter(a => a.pledge_id === pledge.id) || []
         const totals = calculatePledgeTotals(amounts, new Date())
-        const ownerRepledge = ownerRepledges?.find(r => r.pledge_id === pledge.id)
-        return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
+        // Get all active financers for this pledge
+        const pledgeFinancers = ownerRepledges?.filter(r => r.pledge_id === pledge.id) || []
+        const financerNames = pledgeFinancers.map(f => f.financer_name).join(', ')
+        const financerCount = pledgeFinancers.length
+        return { ...pledge, amounts, ...totals, financer_name: financerNames, financer_count: financerCount }
       })
     } catch (error) {
       console.error('Error getting active pledges:', error)
@@ -334,8 +337,11 @@ export const getActivePledges = async () => {
   return pledges.map(pledge => {
     const amounts = allAmounts.filter(a => a.pledge_id === pledge.id)
     const totals = calculatePledgeTotals(amounts, new Date())
-    const ownerRepledge = ownerRepledges.find(r => r.pledge_id === pledge.id && r.status === 'ACTIVE')
-    return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
+    // Get all active financers for this pledge
+    const pledgeFinancers = ownerRepledges.filter(r => r.pledge_id === pledge.id && r.status === 'ACTIVE')
+    const financerNames = pledgeFinancers.map(f => f.financer_name).join(', ')
+    const financerCount = pledgeFinancers.length
+    return { ...pledge, amounts, ...totals, financer_name: financerNames, financer_count: financerCount }
   })
 }
 
@@ -354,7 +360,7 @@ export const getClosedPledges = async () => {
         SELECT * FROM pledge_amounts_second WHERE pledge_id = ANY(${pledgeIds})
       `
       
-      // Fetch owner repledges to get financer names (any status for closed pledges)
+      // Fetch owner repledges to get financer names (all financers for closed pledges)
       const ownerRepledges = await sql`
         SELECT pledge_id, financer_name FROM owner_repledges_second WHERE pledge_id = ANY(${pledgeIds})
       `
@@ -363,8 +369,11 @@ export const getClosedPledges = async () => {
         const amounts = allAmounts?.filter(a => a.pledge_id === pledge.id) || []
         const endDate = pledge.canceled_date ? new Date(pledge.canceled_date) : new Date()
         const totals = calculatePledgeTotals(amounts, endDate)
-        const ownerRepledge = ownerRepledges?.find(r => r.pledge_id === pledge.id)
-        return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
+        // Get all financers for this pledge
+        const pledgeFinancers = ownerRepledges?.filter(r => r.pledge_id === pledge.id) || []
+        const financerNames = pledgeFinancers.map(f => f.financer_name).join(', ')
+        const financerCount = pledgeFinancers.length
+        return { ...pledge, amounts, ...totals, financer_name: financerNames, financer_count: financerCount }
       })
     } catch (error) {
       console.error('Error getting closed pledges:', error)
@@ -388,8 +397,11 @@ export const getClosedPledges = async () => {
     const amounts = allAmounts.filter(a => a.pledge_id === pledge.id)
     const endDate = pledge.canceled_date ? new Date(pledge.canceled_date) : new Date()
     const totals = calculatePledgeTotals(amounts, endDate)
-    const ownerRepledge = ownerRepledges.find(r => r.pledge_id === pledge.id)
-    return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
+    // Get all financers for this pledge
+    const pledgeFinancers = ownerRepledges.filter(r => r.pledge_id === pledge.id)
+    const financerNames = pledgeFinancers.map(f => f.financer_name).join(', ')
+    const financerCount = pledgeFinancers.length
+    return { ...pledge, amounts, ...totals, financer_name: financerNames, financer_count: financerCount }
   })
 }
 
@@ -417,10 +429,13 @@ export const getAllPledges = async () => {
           ? new Date(pledge.canceled_date)
           : new Date()
         const totals = calculatePledgeTotals(amounts, endDate)
-        const ownerRepledge = pledge.status === 'ACTIVE'
-          ? ownerRepledges?.find(r => r.pledge_id === pledge.id && r.status === 'ACTIVE')
-          : ownerRepledges?.find(r => r.pledge_id === pledge.id)
-        return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
+        // Get all active financers for this pledge (or all for closed pledges)
+        const pledgeFinancers = pledge.status === 'ACTIVE'
+          ? ownerRepledges?.filter(r => r.pledge_id === pledge.id && r.status === 'ACTIVE') || []
+          : ownerRepledges?.filter(r => r.pledge_id === pledge.id) || []
+        const financerNames = pledgeFinancers.map(f => f.financer_name).join(', ')
+        const financerCount = pledgeFinancers.length
+        return { ...pledge, amounts, ...totals, financer_name: financerNames, financer_count: financerCount }
       })
     } catch (error) {
       console.error('Error getting all pledges:', error)
@@ -445,10 +460,13 @@ export const getAllPledges = async () => {
       ? new Date(pledge.canceled_date)
       : new Date()
     const totals = calculatePledgeTotals(amounts, endDate)
-    const ownerRepledge = pledge.status === 'ACTIVE'
-      ? ownerRepledges.find(r => r.pledge_id === pledge.id && r.status === 'ACTIVE')
-      : ownerRepledges.find(r => r.pledge_id === pledge.id)
-    return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
+    // Get all active financers for this pledge (or all for closed pledges)
+    const pledgeFinancers = pledge.status === 'ACTIVE'
+      ? ownerRepledges.filter(r => r.pledge_id === pledge.id && r.status === 'ACTIVE')
+      : ownerRepledges.filter(r => r.pledge_id === pledge.id)
+    const financerNames = pledgeFinancers.map(f => f.financer_name).join(', ')
+    const financerCount = pledgeFinancers.length
+    return { ...pledge, amounts, ...totals, financer_name: financerNames, financer_count: financerCount }
   })
 }
 
@@ -487,9 +505,9 @@ export const searchPledges = async (query, status = 'ALL') => {
         SELECT * FROM pledge_amounts_second WHERE pledge_id = ANY(${pledgeIds})
       `
       
-      // Fetch active owner repledges to get financer names
+      // Fetch owner repledges to get financer names
       const ownerRepledges = await sql`
-        SELECT pledge_id, financer_name FROM owner_repledges_second WHERE pledge_id = ANY(${pledgeIds}) AND status = 'ACTIVE'
+        SELECT pledge_id, financer_name, status FROM owner_repledges_second WHERE pledge_id = ANY(${pledgeIds})
       `
 
       return pledges.map(pledge => {
@@ -498,8 +516,13 @@ export const searchPledges = async (query, status = 'ALL') => {
           ? new Date(pledge.canceled_date)
           : new Date()
         const totals = calculatePledgeTotals(amounts, endDate)
-        const ownerRepledge = ownerRepledges?.find(r => r.pledge_id === pledge.id)
-        return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
+        // Get all active financers for this pledge (or all for closed pledges)
+        const pledgeFinancers = pledge.status === 'ACTIVE'
+          ? ownerRepledges?.filter(r => r.pledge_id === pledge.id && r.status === 'ACTIVE') || []
+          : ownerRepledges?.filter(r => r.pledge_id === pledge.id) || []
+        const financerNames = pledgeFinancers.map(f => f.financer_name).join(', ')
+        const financerCount = pledgeFinancers.length
+        return { ...pledge, amounts, ...totals, financer_name: financerNames, financer_count: financerCount }
       })
     } catch (error) {
       console.error('Error searching pledges:', error)
@@ -530,8 +553,13 @@ export const searchPledges = async (query, status = 'ALL') => {
       ? new Date(pledge.canceled_date)
       : new Date()
     const totals = calculatePledgeTotals(amounts, endDate)
-    const ownerRepledge = ownerRepledges.find(r => r.pledge_id === pledge.id && r.status === 'ACTIVE')
-    return { ...pledge, amounts, ...totals, financer_name: ownerRepledge?.financer_name || '' }
+    // Get all active financers for this pledge (or all for closed pledges)
+    const pledgeFinancers = pledge.status === 'ACTIVE'
+      ? ownerRepledges.filter(r => r.pledge_id === pledge.id && r.status === 'ACTIVE')
+      : ownerRepledges.filter(r => r.pledge_id === pledge.id)
+    const financerNames = pledgeFinancers.map(f => f.financer_name).join(', ')
+    const financerCount = pledgeFinancers.length
+    return { ...pledge, amounts, ...totals, financer_name: financerNames, financer_count: financerCount }
   })
 }
 

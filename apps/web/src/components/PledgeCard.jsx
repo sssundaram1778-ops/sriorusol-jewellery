@@ -175,11 +175,16 @@ export default function PledgeCard({ pledge, showStatus = false }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Financer Name Badge */}
+            {/* Financer Names Badge - supports multiple financers */}
             {pledge.financer_name && (
               <div className={`flex items-center gap-1.5 px-3 py-2 rounded-xl ${isFirst ? 'bg-blue-50 border border-blue-200' : 'bg-purple-50 border border-purple-200'}`}>
                 <Landmark className={`w-4 h-4 ${isFirst ? 'text-blue-500' : 'text-purple-500'} flex-shrink-0`} />
-                <span className={`text-xs font-bold ${isFirst ? 'text-blue-700' : 'text-purple-700'} max-w-[80px] truncate`}>{pledge.financer_name}</span>
+                <span className={`text-xs font-bold ${isFirst ? 'text-blue-700' : 'text-purple-700'} max-w-[100px] truncate`}>
+                  {pledge.financer_count > 1 
+                    ? `${pledge.financer_name.split(',')[0].trim()} +${pledge.financer_count - 1}`
+                    : pledge.financer_name
+                  }
+                </span>
               </div>
             )}
             <button className={`w-11 h-11 rounded-xl ${isFirst ? 'bg-blue-600 shadow-blue-500/30 group-hover:bg-blue-700 group-hover:shadow-blue-600/40' : 'bg-purple-600 shadow-purple-500/30 group-hover:bg-purple-700 group-hover:shadow-purple-600/40'} flex items-center justify-center shadow-lg group-hover:scale-110 transition-all duration-300`}>
