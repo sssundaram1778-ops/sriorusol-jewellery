@@ -144,7 +144,12 @@ export default function PledgeCard({ pledge, showStatus = false }) {
           </div>
           <div className={`h-8 w-px ${isFirst ? 'bg-blue-200' : 'bg-purple-200'}`}></div>
           <div className="text-center">
-            <p className={`text-[10px] ${isFirst ? 'text-blue-500' : 'text-purple-500'} uppercase font-semibold`}>Weight</p>
+            <p className={`text-[10px] ${isFirst ? 'text-blue-500' : 'text-purple-500'} uppercase font-semibold`}>Gross Wt</p>
+            <p className="text-sm font-bold text-slate-700">{pledge.gross_weight || 0}g</p>
+          </div>
+          <div className={`h-8 w-px ${isFirst ? 'bg-blue-200' : 'bg-purple-200'}`}></div>
+          <div className="text-center">
+            <p className={`text-[10px] ${isFirst ? 'text-blue-500' : 'text-purple-500'} uppercase font-semibold`}>Net Wt</p>
             <p className="text-sm font-bold text-slate-700">{pledge.net_weight || 0}g</p>
           </div>
           <div className={`h-8 w-px ${isFirst ? 'bg-blue-200' : 'bg-purple-200'}`}></div>
